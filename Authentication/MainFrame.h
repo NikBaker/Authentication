@@ -19,7 +19,7 @@ class UserFrame;
 class AdminFrame;
 class FirstEnterDlg;
 
-// Класс стартового окна
+/*Класс стартового окна*/
 class MainFrame : public wxFrame
 {	
 public:
