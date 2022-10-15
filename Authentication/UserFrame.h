@@ -30,6 +30,8 @@ public:
 
 	void OnChangePsw(wxMenuEvent& event);
 	void OnLogOut(wxMenuEvent& event);
+	void OnMenuExit(wxMenuEvent& event);
+	void OnClose(wxCommandEvent& event);
 
 	void ExitFromSystem(wxString login);	// Функция для аудита выходов из систему
 

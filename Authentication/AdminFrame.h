@@ -1,6 +1,7 @@
 #pragma once
 #include "wx/wx.h"
 #include <wx/regex.h>
+#include <wx/grid.h>
 
 #include "User.h"
 #include "MainFrame.h"
@@ -8,6 +9,11 @@
 #include <fstream>
 #include <vector>
 #include <algorithm>
+
+#include <iostream>
+#include <sstream>
+#include <locale>
+#include <iomanip>
 
 using std::vector;
 using std::string;
@@ -17,10 +23,14 @@ const int ID_BTN = 2;
 const int ID_CHAGE_PSW = 3;
 const int ID_LOGOUT = 4;
 const int ID_MINMAX = 100;
+const int ID_AUDIT_OPERATIONS = 101;
+const int ID_AUDIT = 102;
 
 class ChangePswDlg;
 class AddNewUserDlg;
 class SetMinMaxDlg;
+class AuditOperationsDlg;
+class AuditDlg;
 
 // Класс окна админа
 class AdminFrame : public wxFrame
@@ -38,12 +48,15 @@ public:
 	void OnMenuExit(wxMenuEvent& event);
 	void OnMenuAbout(wxMenuEvent& event);
 	void OnChangePsw(wxMenuEvent& event);
+	void OnAuditOperations(wxMenuEvent& event);
+	void OnAudit(wxMenuEvent& event);
 	void OnLogOut(wxMenuEvent& event);
 	void OnAddNew(wxCommandEvent& event);
 	void OnSelect(wxCommandEvent& event);
 	//void OnSave(wxCommandEvent& event);
 	void OnMinMax(wxCommandEvent& event);
 	void OnDClick(wxCommandEvent& event);
+	void OnClose(wxCommandEvent& event);
 
 	void ExitFromSystem(wxString login);	// Функция для аудита выходов из систему
 	void CnangeUserData(wxString operation, wxString username);	// Функция для аудита изменений в файле учетных записей
@@ -57,6 +70,8 @@ private:
 	wxCheckBox* block;	
 	wxCheckBox* limit;
 	ChangePswDlg* change_dlg;
+	AuditOperationsDlg* auditop_dlg;
+	AuditDlg* audit_dlg;
 	AddNewUserDlg* addnew_dlg;
 	SetMinMaxDlg* setminmax_dlg;
 public:
@@ -98,6 +113,40 @@ private:
 	wxTextCtrl* old_psw;
 	wxTextCtrl* new_psw;
 	wxTextCtrl* confirm_psw;
+};
+
+class Audit 
+{
+public:
+	Audit(wxString op, wxString un, wxString dt) {
+		adminOperation = op;
+		userName = un;
+		dateTime = dt;
+	}
+public:
+	wxString adminOperation;
+	wxString userName;
+	wxString dateTime;
+};
+
+// Класс диалога аудита изменений в файле учетных записей
+class AuditOperationsDlg : public wxDialog
+{
+public:
+	AuditOperationsDlg(wxWindow* parent, wxString f_name, bool isEnterAaudit = false);
+
+	virtual void OnSortCol(wxGridEvent& event);
+	virtual void OnQuery(wxCommandEvent& event);
+
+protected:
+	wxGrid* grid;
+	vector<Audit> audits;
+
+	wxTextCtrl* tc_operation;
+	wxTextCtrl* tc_name;
+	wxTextCtrl* tc_datetime_start;
+	wxTextCtrl* tc_datetime_end;
+	wxButton* btn_query;
 };
 
 // Класс диалога добавления нового пользователя админом

@@ -187,14 +187,26 @@ void MainFrame::EnterToSystem(bool isSucces, wxString login) {
 	// convert now to string form
 	char* dt = ctime(&now);
 	if (isSucces) {
-		fin_aud << "Успешный вход: " << "Имя пользователя:" << login << "\t" << "Дата/время:" << dt;
+		fin_aud << "Успешный вход" << "\n";
+		fin_aud << login << "\n";
+		fin_aud << dt;
+
+		//fin_aud << "Успешный вход: " << "Имя пользователя:" << login << " " << "Дата/время:" << dt;
 	}
 	else {
 		if (login == wxT("")) {
-			fin_aud << "Неуспешный вход(несуществующий логин): " << "Дата/время:" << dt;
+			fin_aud << "Неуспешный вход" << "\n";
+			fin_aud << "Несуществующий логин" << "\n";
+			fin_aud << dt;
+
+			//fin_aud << "Неуспешный вход: " << "Имя пользователя:" << "Несуществующий логин " << "Дата/время:" << dt;
 		}
 		else {
-			fin_aud << "Неуспешный вход: " << "Имя пользователя:" << login << "\t" << "Дата/время:" << dt;
+			fin_aud << "Неуспешный вход" << "\n";
+			fin_aud << login << "\n";
+			fin_aud << dt;
+
+			//fin_aud << "Неуспешный вход: " << "Имя пользователя:" << login << " " << "Дата/время:" << dt;
 		}
 	}
 }

@@ -1,4 +1,5 @@
 #include "AdminFrame.h"
+#include "wx/spinctrl.h"
 
 AdminFrame::AdminFrame(wxWindow* parent,
 	wxWindowID id,
@@ -14,6 +15,8 @@ AdminFrame::AdminFrame(wxWindow* parent,
 	file->Append(wxID_EXIT, wxT("Выход...\tCtrl+e"));
 	wxMenu* admin = new wxMenu;
 	admin->Append(ID_CHANGE, wxT("Смена пароля...\tCtrl+n"));
+	admin->Append(ID_AUDIT_OPERATIONS, wxT("Аудит изменений в файле учетных записей"));
+	admin->Append(ID_AUDIT, wxT("Аудит удачных и неудачных попыток входа"));
 	admin->Append(ID_LOGOUT, wxT("Выход из учетной записи"));
 	wxMenu* help = new wxMenu;
 	help->Append(wxID_ABOUT, wxT("О программе...\tCtrl+h"));
@@ -42,6 +45,12 @@ AdminFrame::AdminFrame(wxWindow* parent,
 	v_box->Add(set_minmax, 0, wxEXPAND | wxBOTTOM, 15);
 	wxButton* save = new wxButton(pnl, wxID_SAVE, wxT("Сохранить"));
 	v_box->Add(save, 0, wxEXPAND | wxBOTTOM, 15);
+	//
+	wxStaticText* length_psws = new wxStaticText(pnl, wxID_ANY, wxT("Длина списка использованных паролей:"));
+	wxSpinCtrl* spin = new wxSpinCtrl(pnl, wxID_ANY);
+	v_box->Add(length_psws, 0, /*wxEXPAND | */wxBOTTOM, 5);
+	v_box->Add(spin, 0, /*wxEXPAND | */wxBOTTOM, 15);
+	//
 	h_box->Add(v_box, 1, wxEXPAND | wxRIGHT | wxLEFT, 15);
 
 	wxBoxSizer* around_box = new wxBoxSizer(wxVERTICAL);
@@ -53,7 +62,10 @@ AdminFrame::AdminFrame(wxWindow* parent,
 	Connect(wxID_ABOUT, wxEVT_MENU, wxMenuEventHandler(AdminFrame::OnMenuAbout));
 	Connect(wxID_EXIT, wxEVT_MENU, wxMenuEventHandler(AdminFrame::OnMenuExit));
 	Connect(ID_CHANGE, wxEVT_MENU, wxMenuEventHandler(AdminFrame::OnChangePsw));
+	Connect(ID_AUDIT_OPERATIONS, wxEVT_MENU, wxMenuEventHandler(AdminFrame::OnAuditOperations));
+	Connect(ID_AUDIT, wxEVT_MENU, wxMenuEventHandler(AdminFrame::OnAudit));
 	Connect(ID_LOGOUT, wxEVT_MENU, wxMenuEventHandler(AdminFrame::OnLogOut));
+	Connect(wxEVT_CLOSE_WINDOW, wxCommandEventHandler(AdminFrame::OnClose));
 	Connect(wxID_ADD, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AdminFrame::OnAddNew));
 	//Connect(wxID_SAVE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AdminFrame::OnSave));	// Пока отключим, будем менять значения разу после изменения checkbox
 	Connect(block->GetId(), wxEVT_CHECKBOX, wxCommandEventHandler(AdminFrame::OnChange_block));
@@ -121,8 +133,14 @@ AdminFrame::AdminFrame(wxWindow* parent,
 	}
 }
 
-void AdminFrame::OnMenuExit(wxMenuEvent& event) {
-	Close();
+void AdminFrame::OnMenuExit(wxMenuEvent& event) {		// При закрытии разлогиниваемся?
+	ExitFromSystem(wxT("ADMIN"));
+	Destroy();
+}
+
+void AdminFrame::OnClose(wxCommandEvent& event) {		// При закрытии разлогиниваемся?
+	ExitFromSystem(wxT("ADMIN"));
+	event.Skip();
 }
 
 void AdminFrame::OnMenuAbout(wxMenuEvent& event) {
@@ -134,13 +152,24 @@ void AdminFrame::OnChangePsw(wxMenuEvent& event) {
 	change_dlg->ShowModal();
 }
 
+void AdminFrame::OnAuditOperations(wxMenuEvent& event) {
+	auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит изменений в файле учетных записей"));
+	auditop_dlg->ShowModal();
+}
+
+void AdminFrame::OnAudit(wxMenuEvent& event) {
+	auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит удачных и неудачных попыток входа"), true);
+	auditop_dlg->ShowModal();
+}
+
 void AdminFrame::CnangeUserData(wxString operation, wxString username) {
 	std::ofstream fin_aud("changes_audit.txt", std::ios_base::app);
 	// current date/time based on current system
 	time_t now = time(0);
 	// convert now to string form
 	char* dt = ctime(&now);
-	fin_aud << "Операция:" << operation << "\t" << "Имя пользователя:" << username << "\t" << "Дата/время:" << dt;
+	//fin_aud << "Операция:" << operation << " " << "Имя пользователя:" << username << " " << "Дата/время:" << dt;
+	fin_aud << operation << "\n" << username << "\n" << dt;
 }
 
 void AdminFrame::ExitFromSystem(wxString login) {
@@ -149,7 +178,12 @@ void AdminFrame::ExitFromSystem(wxString login) {
 	time_t now = time(0);
 	// convert now to string form
 	char* dt = ctime(&now);
-	fin_aud << "Успешный выход:" << "\t" << "Имя пользователя:" << login << "\t" << "Дата/время:" << dt;
+
+	fin_aud << "Успешный выход" << "\n";
+	fin_aud << login << "\n";
+	fin_aud << dt;
+
+	//fin_aud << "Успешный выход:" << " " << "Имя пользователя:" << login << " " << "Дата/время:" << dt;
 }
 
 void AdminFrame::OnLogOut(wxMenuEvent& event) {
@@ -292,7 +326,7 @@ void AdminFrame::OnSelect(wxCommandEvent& event) {
 }
 
 void AdminFrame::OnDClick(wxCommandEvent& event) {
-	wxString name = event.GetString();
+	/*wxString name = event.GetString();
 	wxString list_pswds;
 
 	if (name != wxT("ADMIN")) {
@@ -305,9 +339,7 @@ void AdminFrame::OnDClick(wxCommandEvent& event) {
 			}
 		}
 	}
-
-	wxMessageBox(list_pswds, wxT("Список использованных паролей"));
-	
+	wxMessageBox(list_pswds, wxT("Список использованных паролей"));*/
 }
 
 AdminFrame::~AdminFrame() {		// При уничтожении перезаписываем файл с информацией о пользователях
@@ -401,6 +433,278 @@ void ChangePswDlg::OnOkBtn(wxCommandEvent& event) {
 				}
 			}
 		}
+	}
+}
+
+AuditOperationsDlg::AuditOperationsDlg(wxWindow* parent, wxString f_name, bool isEnterAaudit) : wxDialog(parent, wxID_ANY, f_name, wxPoint(-1, -1), wxSize(1200, 500))
+{
+	wxPanel* pnl = new wxPanel(this, -1);
+
+	wxBoxSizer* around_box = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizer* v_box = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizer* query_box = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer* btn_box = new wxBoxSizer(wxHORIZONTAL);
+
+	wxStaticText* t_operation = new wxStaticText(pnl, wxID_ANY, wxT("Операция:"));
+	tc_operation = new wxTextCtrl(pnl, wxID_ANY);
+	wxStaticText* t_name = new wxStaticText(pnl, wxID_ANY, wxT("Имя:"));
+	tc_name = new wxTextCtrl(pnl, wxID_ANY);
+	wxStaticText* t_start = new wxStaticText(pnl, wxID_ANY, wxT("С:"));
+	tc_datetime_start = new wxTextCtrl(pnl, wxID_ANY);
+	wxStaticText* t_end = new wxStaticText(pnl, wxID_ANY, wxT("До:"));
+	tc_datetime_end = new wxTextCtrl(pnl, wxID_ANY);
+
+	query_box->Add(t_operation, 0, wxRIGHT | wxALIGN_CENTER_VERTICAL, 5);
+	query_box->Add(tc_operation, 1, wxRIGHT, 10);
+	query_box->Add(t_name, 0, wxRIGHT | wxALIGN_CENTER_VERTICAL, 5);
+	query_box->Add(tc_name, 1, wxRIGHT, 10);
+	query_box->Add(t_start, 0, wxRIGHT | wxALIGN_CENTER_VERTICAL, 5);
+	query_box->Add(tc_datetime_start, 1, wxRIGHT, 10);
+	query_box->Add(t_end, 0, wxRIGHT | wxALIGN_CENTER_VERTICAL, 5);
+	query_box->Add(tc_datetime_end, 1, wxRIGHT, 10);
+	btn_query = new wxButton(pnl, wxID_ANY, wxT("Найти"));
+	query_box->Add(btn_query, 0, wxRIGHT);
+
+	v_box->Add(query_box, 0, wxEXPAND | wxBOTTOM, 10);
+
+	grid = new wxGrid(pnl, wxID_ANY);
+	grid->CreateGrid(0, 4);
+
+	string first_str;
+	string operation;
+	string name;
+	string date_time;
+
+	int count = -1;
+
+	std::ifstream fin;
+
+	if (isEnterAaudit) {
+		fin.open("audit.txt");
+	}
+	else {
+		fin.open("changes_audit.txt");
+	}
+
+	if (fin.is_open())
+	{
+		getline(fin, first_str);
+		while (!fin.eof()) 
+		{
+			getline(fin, operation);
+			if (operation == wxT("")) {
+				break;
+			}
+			getline(fin, name);
+			getline(fin, date_time);
+			count++;
+
+			wxString s1(operation);
+			wxString s2(name);
+			wxString s3(date_time);
+
+			audits.push_back(Audit(s1, s2, s3));
+
+			grid->AppendRows();
+			grid->SetCellValue(count, 0, wxString::Format(wxT("%i"), count + 1));
+			grid->SetCellValue(count, 1, s1);
+			grid->SetCellValue(count, 2, s2);
+			grid->SetCellValue(count, 3, s3);
+
+			grid->SetCellAlignment(count, 0, wxALIGN_CENTRE, wxALIGN_CENTRE);
+			grid->SetCellAlignment(count, 1, wxALIGN_LEFT, wxALIGN_CENTRE);
+			grid->SetCellAlignment(count, 2, wxALIGN_LEFT, wxALIGN_CENTRE);
+			grid->SetCellAlignment(count, 3, wxALIGN_LEFT, wxALIGN_CENTRE);
+
+		}
+		fin.close();
+	}
+
+	grid->HideRowLabels();
+	int width_0 = (this->GetSize().x) / 8;
+	int width = (this->GetSize().x - width_0) / 3;
+	int delta = 10;
+	grid->SetColSize(0, width_0);
+	grid->SetColSize(1, width - delta);
+	grid->SetColSize(2, width - delta);
+	grid->SetColSize(3, width - delta);
+
+	grid->SetUseNativeColLabels(true);
+	grid->SetColLabelSize(40);
+	grid->SetSortingColumn(1);
+
+	wxString* arr_str = new wxString[4]{ wxT("Номер записи"), wxT("Операция"), wxT("Имя пользователя"), wxT("Дата и время")};
+	
+	for (int i = 0; i < 4; ++i) {
+		grid->SetColLabelValue(i, arr_str[i]);
+		grid->DisableColResize(i);
+	}	
+
+	for (int i = 0; i < grid->GetNumberRows(); ++i) {
+		for (int j = 0; j < grid->GetNumberCols(); ++j) {
+			grid->SetReadOnly(i, j);
+		}
+	}
+
+	Connect(wxEVT_GRID_COL_SORT, wxGridEventHandler(AuditOperationsDlg::OnSortCol));
+	Connect(btn_query->GetId(), wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AuditOperationsDlg::OnQuery));
+
+	v_box->Add(grid, 1, wxEXPAND | wxBOTTOM, 10);
+	wxButton* btn_ok = new wxButton(pnl, wxID_OK);
+	btn_box->Add(btn_ok, 0, wxRight, 5);
+	v_box->Add(btn_box, 0, wxALIGN_RIGHT);
+	around_box->Add(v_box, 1, wxEXPAND | wxALL, 7);
+
+	pnl->SetSizer(around_box);
+
+	Centre();
+}
+
+void AuditOperationsDlg::OnSortCol(wxGridEvent& event) {
+	int col_num = event.GetCol();
+	if (col_num == 0) 
+		return;
+
+	if (col_num == 1) 
+	{
+		sort(audits.begin(), audits.end(), [](Audit& a1, Audit& a2) {return a1.adminOperation < a2.adminOperation; });
+	}
+	else if (col_num == 2)
+	{
+		sort(audits.begin(), audits.end(), [](Audit& a1, Audit& a2) {return a1.userName < a2.userName; });
+	} 
+	else
+	{
+		sort(audits.begin(), audits.end(), [](Audit& a1, Audit& a2) {return a1.dateTime < a2.dateTime; });
+	}
+
+	for (int i = 0; i < grid->GetNumberRows(); ++i) 
+	{
+		grid->SetCellValue(i, 0, wxString::Format(wxT("%i"), i + 1));
+		grid->SetCellValue(i, 1, audits[i].adminOperation);
+		grid->SetCellValue(i, 2, audits[i].userName);
+		grid->SetCellValue(i, 3, audits[i].dateTime);
+	}
+}
+
+bool cmp_time(const wxString& time1, const wxString& time2, const char& cmp_op, const wxString& time3 = wxT("")) {
+	struct std::tm tm;
+	wxString temp = time1;
+	std::istringstream ss(temp.ToStdString());
+	ss >> std::get_time(&tm, "%a %b %d %H:%M:%S %Y");
+	std::time_t a_time = mktime(&tm);
+
+	struct std::tm tm2;
+	temp = time2;
+	std::istringstream ss2(temp.ToStdString());
+	ss2 >> std::get_time(&tm2, "%a %b %d %H:%M:%S %Y");
+	std::time_t time_first = mktime(&tm2);
+
+	if (time3 != wxT("")) {
+		struct std::tm tm3;
+		temp = time3;
+		std::istringstream ss3(temp.ToStdString());
+		ss3 >> std::get_time(&tm3, "%a %b %d %H:%M:%S %Y");
+		std::time_t time_second = mktime(&tm3);
+
+		return (a_time >= time_first && a_time <= time_second);
+	}
+	
+	if (cmp_op == '<') {
+		return (a_time <= time_first);
+	}
+	if (cmp_op == '>') {
+		return (a_time >= time_first);
+	}
+	
+}
+
+void AuditOperationsDlg::OnQuery(wxCommandEvent& event) {
+
+	vector<Audit> res;
+
+	wxString s_op = tc_operation->GetValue();
+	wxString s_name = tc_name->GetValue();
+	wxString s_dtstart = tc_datetime_start->GetValue();
+	wxString s_dtend = tc_datetime_end->GetValue();
+
+	struct std::tm tm;
+	wxString temp = s_dtstart;
+	std::istringstream ss(temp.ToStdString());
+	ss >> std::get_time(&tm, "%a %b %d %H:%M:%S %Y");
+	std::time_t start_time = mktime(&tm);
+
+	struct std::tm tm2;
+	temp = s_dtend;
+	std::istringstream ss2(temp.ToStdString());
+	ss2 >> std::get_time(&tm2, "%a %b %d %H:%M:%S %Y");
+	std::time_t end_time= mktime(&tm2);
+
+	if (s_dtstart != wxT("") && s_dtend != wxT("")) {
+		if (end_time < start_time) {
+			wxMessageBox(wxT("Время, с которого производится поиск больше времени, до которого производится поиск"), wxT("Ошибка во время запроса"));
+			return;
+		}
+	}
+	
+	auto it = find_if(audits.begin(), audits.end(), [s_op, s_name, s_dtstart, s_dtend](Audit& a) {
+		///////////////////////////////////////
+		
+		return ((s_op.IsEmpty() || a.adminOperation == s_op) && (s_name.IsEmpty() || a.userName == s_name) &&
+				(s_dtstart.IsEmpty() && s_dtend.IsEmpty() 
+					|| s_dtstart.IsEmpty() && !s_dtend.IsEmpty() && cmp_time(a.dateTime, s_dtend, '<')
+					|| !s_dtstart.IsEmpty() && s_dtend.IsEmpty() && cmp_time(a.dateTime, s_dtstart, '>')
+					|| !s_dtstart.IsEmpty() && !s_dtend.IsEmpty() && cmp_time(a.dateTime, s_dtstart, ' ', s_dtend)
+				));
+		
+		// Попробовать через Enum:
+		/*
+		enum class {true, first, second, pair}
+		sl.IsEmpty() + 2*sr.Empty() - вычисляем побитово одно из значений: 00, 01, 10, 11
+		Затем передаем получившееся значение в cmp_time()
+		*/
+		///////////////////////////////////////
+		
+	});
+	while (it != audits.end()) {
+		res.push_back(*it);
+		it = find_if(it + 1, audits.end(), [s_op, s_name, s_dtstart, s_dtend](Audit& a) {
+			///////////////////////////////////
+
+			return ((s_op.IsEmpty() || a.adminOperation == s_op) && (s_name.IsEmpty() || a.userName == s_name) &&
+				(s_dtstart.IsEmpty() && s_dtend.IsEmpty()
+					|| s_dtstart.IsEmpty() && !s_dtend.IsEmpty() && cmp_time(a.dateTime, s_dtend, '<')
+					|| !s_dtstart.IsEmpty() && s_dtend.IsEmpty() && cmp_time(a.dateTime, s_dtstart, '>')
+					|| !s_dtstart.IsEmpty() && !s_dtend.IsEmpty() && cmp_time(a.dateTime, s_dtstart, ' ', s_dtend)
+					));
+
+			// Попробовать через Enum:
+			/*
+			enum class {true, first, second, pair}
+			sl.IsEmpty() + 2*sr.Empty() - вычисляем побитово одно из значений: 00, 01, 10, 11
+			Затем передаем получившееся значение в cmp_time()
+			*/
+
+			////////////////////////////////////
+		});
+	}
+
+	for (int i = 0; i < grid->GetNumberRows(); ++i) {
+		for (int j = 0; j < grid->GetNumberCols(); ++j) {
+			grid->SetCellValue(i, j, wxT(""));
+		}
+	}
+
+	if (!res.size()) {
+		wxMessageBox(wxT("Поиск не дал ни одного результата"));
+		return;
+	}
+
+	for (int i = 0; i < res.size(); ++i) {
+		grid->SetCellValue(i, 0, wxString::Format(wxT("%i"), i + 1));
+		grid->SetCellValue(i, 1, res[i].adminOperation);
+		grid->SetCellValue(i, 2, res[i].userName);
+		grid->SetCellValue(i, 3, res[i].dateTime);
 	}
 }
 
@@ -524,7 +828,7 @@ void FirstEnterDlg::OnOkBtn(wxCommandEvent& event) {
 	}
 }
 
-SetMinMaxDlg::SetMinMaxDlg() : wxDialog(NULL, wxID_ANY, wxT("Установка времени действия пароля"), wxPoint(-1, -1), wxSize(300, 200)) {
+SetMinMaxDlg::SetMinMaxDlg() : wxDialog(NULL, wxID_ANY, wxT("Установка времени действия пароля"), wxPoint(-1, -1), wxSize(400, 125)) {
 	wxPanel* pnl = new wxPanel(this, -1);
 
 	wxBoxSizer* v_box = new wxBoxSizer(wxVERTICAL);
@@ -532,27 +836,27 @@ SetMinMaxDlg::SetMinMaxDlg() : wxDialog(NULL, wxID_ANY, wxT("Установка времени д
 	wxBoxSizer* h_box2 = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* around_box = new wxBoxSizer(wxVERTICAL);
 
-	wxStaticText* t_min = new wxStaticText(pnl, wxID_ANY, wxT("Мин"));
-	wxStaticText* t_max = new wxStaticText(pnl, wxID_ANY, wxT("Макс"));
+	wxStaticText* t_min = new wxStaticText(pnl, wxID_ANY, wxT("Минимум (дней)"));
+	wxStaticText* t_max = new wxStaticText(pnl, wxID_ANY, wxT("Максимум (дней)"));
 
-	h_box1->Add(t_min, 1, wxEXPAND | wxRIGHT, 10);
+	h_box1->Add(t_min, 0, wxEXPAND | wxRIGHT, 5);
 	min = new wxTextCtrl(pnl, wxID_ANY);
-	h_box1->Add(min, 1, wxEXPAND | wxRIGHT, 10);
-	h_box1->Add(t_max, 1, wxEXPAND | wxRIGHT, 10);
+	h_box1->Add(min, 1, wxEXPAND | wxRIGHT, 5);
+	h_box1->Add(t_max, 0, wxEXPAND | wxRIGHT, 5);
 	max = new wxTextCtrl(pnl, wxID_ANY);
 	h_box1->Add(max, 1, wxEXPAND);
 
-	v_box->Add(h_box1, 0, wxEXPAND | wxBOTTOM, 10);
+	v_box->Add(h_box1, 0, wxEXPAND | wxBOTTOM, 5);
 
 	wxButton* ok_btn = new wxButton(pnl, wxID_OK, wxT("Ок"));
 	wxButton* cnl_btn = new wxButton(pnl, wxID_CANCEL, wxT("Отмена"));
 
-	h_box2->Add(ok_btn, 0, wxEXPAND | wxRIGHT, 10);
+	h_box2->Add(ok_btn, 0, wxEXPAND | wxRIGHT, 5);
 	h_box2->Add(cnl_btn, 0, wxEXPAND);
 
 	v_box->Add(h_box2, 0, wxALIGN_RIGHT);
 
-	around_box->Add(v_box, 0, wxEXPAND | wxALL, 10);
+	around_box->Add(v_box, 0, wxEXPAND | wxALL, 5);
 
 	pnl->SetSizer(around_box);
 }

@@ -33,10 +33,10 @@ UserFrame::UserFrame(wxWindow* parent,
 	Centre();
 
 	Connect(wxID_ABOUT, wxEVT_MENU, wxMenuEventHandler(AdminFrame::OnMenuAbout));
-	Connect(wxID_EXIT, wxEVT_MENU, wxMenuEventHandler(AdminFrame::OnMenuExit));
+	Connect(wxID_EXIT, wxEVT_MENU, wxMenuEventHandler(UserFrame::OnMenuExit));
 	Connect(ID_CHANGE_US, wxEVT_MENU, wxMenuEventHandler(UserFrame::OnChangePsw));
 	Connect(ID_US_LOGOUT, wxEVT_MENU, wxMenuEventHandler(UserFrame::OnLogOut));
-
+	Connect(wxEVT_CLOSE_WINDOW, wxCommandEventHandler(UserFrame::OnClose));
 }
 
 void UserFrame::OnChangePsw(wxMenuEvent& event) {
@@ -50,7 +50,12 @@ void UserFrame::ExitFromSystem(wxString login) {
 	time_t now = time(0);
 	// convert now to string form
 	char* dt = ctime(&now);
-	fin_aud << "Успешный выход:" << "\t" << "Имя пользователя:" << login << "\t" << "Дата/время:" << dt;
+
+	fin_aud << "Успешный выход" << "\n";
+	fin_aud << login << "\n";
+	fin_aud << dt;
+
+	//fin_aud << "Успешный выход:" << "\t" << "Имя пользователя:" << login << "\t" << "Дата/время:" << dt;
 }
 
 void UserFrame::OnLogOut(wxMenuEvent& event) {
@@ -60,6 +65,17 @@ void UserFrame::OnLogOut(wxMenuEvent& event) {
 	mainFrame->start_users = user_users;
 	Destroy();
 	mainFrame->Show(true);
+}
+
+void UserFrame::OnMenuExit(wxMenuEvent& event) {	// При закрытии программы разлогиниваем пользователя?
+	ExitFromSystem(UserName);
+	Destroy();
+}
+
+void UserFrame::OnClose(wxCommandEvent& event) {	// При закрытии программы разлогиниваем пользователя?
+	ExitFromSystem(UserName);
+	event.Skip();
+	//Close();
 }
 
 UserFrame::~UserFrame() {
@@ -183,6 +199,8 @@ void ChangeUsPswDlg::OnOkBtn(wxCommandEvent& event) {
 					else {
 						if (find(it->pswds_list.begin(), it->pswds_list.end(), this->GetNewPsw()) != it->pswds_list.end()) {
 							wxMessageBox(wxT("Вы уже использовали такой пароль,\nпопробуйте другой"));
+							//wxMessageBox(wxT("Вы уже недавно изменяли пароль,\nпопробуйте позже"));	//
+							//wxMessageBox(wxT("Пришло время сменить пароль,\nВы будете перенаправлены на страницу смены пароля"));	//
 						}
 						else {
 							if (it->pswds_list.size() == 10) {		// 10 - максимальное значение, которое устанавливается админом
