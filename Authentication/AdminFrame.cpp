@@ -130,16 +130,18 @@ AdminFrame::AdminFrame(wxWindow* parent,
 		std::ofstream fout("changes_audit.txt");
 		fout << "Файл аудита изменений в файле учетных записей:\n";
 		fout.close();
+
+		fin_aud.close();	//
 	}
 }
 
 void AdminFrame::OnMenuExit(wxMenuEvent& event) {		// При закрытии разлогиниваемся?
-	ExitFromSystem(wxT("ADMIN"));
+	ExitFromSystem(AdminName);
 	Destroy();
 }
 
 void AdminFrame::OnClose(wxCommandEvent& event) {		// При закрытии разлогиниваемся?
-	ExitFromSystem(wxT("ADMIN"));
+	ExitFromSystem(AdminName);
 	event.Skip();
 }
 
@@ -164,30 +166,23 @@ void AdminFrame::OnAudit(wxMenuEvent& event) {
 
 void AdminFrame::CnangeUserData(wxString operation, wxString username) {
 	std::ofstream fin_aud("changes_audit.txt", std::ios_base::app);
-	// current date/time based on current system
 	time_t now = time(0);
-	// convert now to string form
 	char* dt = ctime(&now);
-	//fin_aud << "Операция:" << operation << " " << "Имя пользователя:" << username << " " << "Дата/время:" << dt;
 	fin_aud << operation << "\n" << username << "\n" << dt;
 }
 
 void AdminFrame::ExitFromSystem(wxString login) {
 	std::ofstream fin_aud("audit.txt", std::ios_base::app);
-	// current date/time based on current system
 	time_t now = time(0);
-	// convert now to string form
 	char* dt = ctime(&now);
 
 	fin_aud << "Успешный выход" << "\n";
 	fin_aud << login << "\n";
 	fin_aud << dt;
-
-	//fin_aud << "Успешный выход:" << " " << "Имя пользователя:" << login << " " << "Дата/время:" << dt;
 }
 
 void AdminFrame::OnLogOut(wxMenuEvent& event) {
-	ExitFromSystem(wxT("ADMIN"));
+	ExitFromSystem(AdminName);
 
 	MainFrame* mainFrame = new MainFrame(NULL, wxID_ANY, wxT("Вход"), wxPoint(-1, -1), wxSize(370, 225));
 	mainFrame->start_users = users;
@@ -198,8 +193,10 @@ void AdminFrame::OnLogOut(wxMenuEvent& event) {
 void AdminFrame::OnAddNew(wxCommandEvent& event) {
 	addnew_dlg = new AddNewUserDlg();
 	if (addnew_dlg->ShowModal() == wxID_OK) {
-		wxString str = addnew_dlg->new_username->GetValue();
-		auto it = find_if(users.begin(), users.end(), [str](User& u) { return u.name == str; });
+		string str = wxString_to_lowercase(addnew_dlg->new_username->GetValue());
+		auto it = find_if(users.begin(), users.end(), [str](User& u) {
+			string uname = wxString_to_lowercase(u.name);
+			return uname == str; });
 		if (it != users.end()) {	// Если пользователь с таким именем уже есть
 			wxMessageBox(wxT("Пользователь с таким именем уже существует в системе!"));
 		}
@@ -207,18 +204,18 @@ void AdminFrame::OnAddNew(wxCommandEvent& event) {
 			User u(addnew_dlg->new_username->GetValue(), wxT(""), addnew_dlg->block->GetValue(), addnew_dlg->limit->GetValue(), 0, 0, {});	// !!! вместо двух предпоследних параметров установливается мин и макс время, если есть
 			users.push_back(u);
 
-			CnangeUserData(wxT("Добавление нового пользователя"), str);
+			CnangeUserData(wxT("Добавление нового пользователя"), addnew_dlg->new_username->GetValue());
 			if (addnew_dlg->block->GetValue()) {
-				CnangeUserData(wxT("Установка блокировки"), str);
+				CnangeUserData(wxT("Установка блокировки"), addnew_dlg->new_username->GetValue());
 			}
 			else {
-				CnangeUserData(wxT("Снятие блокировки"), str);
+				CnangeUserData(wxT("Снятие блокировки"), addnew_dlg->new_username->GetValue());
 			}
 			if (addnew_dlg->limit->GetValue()) {
-				CnangeUserData(wxT("Установка ограничений на пароль"), str);
+				CnangeUserData(wxT("Установка ограничений на пароль"), addnew_dlg->new_username->GetValue());
 			}
 			else {
-				CnangeUserData(wxT("Снятие ограничений на пароль"), str);
+				CnangeUserData(wxT("Снятие ограничений на пароль"), addnew_dlg->new_username->GetValue());
 			}
 
 			list->Append(wxString(users[users.size() - 1].name));
@@ -299,18 +296,20 @@ void AdminFrame::OnMinMax(wxCommandEvent& event) {
 			users[i].max_pswtime = max;
 		}
 
-		setminmax_dlg->Destroy();
+		//setminmax_dlg->Destroy();
 	}
-	else {
+	setminmax_dlg->Destroy();
+	/*else {
 		setminmax_dlg->Destroy();
-	}
+	}*/
 }
 
 void AdminFrame::OnSelect(wxCommandEvent& event) {
 	// Когда выбираем пользователя в списке становяться доступны чекбоксы
 	// В эти чекбоксы устанавливаем значение, которые соответствуют выбранному пользователю
 	wxString str = event.GetString();
-	if (str == wxT("ADMIN")) {
+
+	if (str == AdminName) {
 		block->Enable(false);
 		limit->Enable(false);
 	}
@@ -417,7 +416,8 @@ void ChangePswDlg::OnOkBtn(wxCommandEvent& event) {
 	else {
 		wxString oldStr = GetOldPsw();
 		AdminFrame* p_wnd = (AdminFrame*)GetParent();
-		auto it = find_if(p_wnd->users.begin(), p_wnd->users.end(), [](User& u) { return u.name == wxT("ADMIN"); });
+		auto it = find_if(p_wnd->users.begin(), p_wnd->users.end(), [p_wnd](User& u) { 
+			return u.name == p_wnd->AdminName; });
 		if (it != p_wnd->users.end()) {
 			if (it->psw != oldStr) {
 				wxMessageBox(wxT("Неправильно введен старый пароль"), wxT("Ошибка при вводе пароля"));
@@ -539,6 +539,8 @@ AuditOperationsDlg::AuditOperationsDlg(wxWindow* parent, wxString f_name, bool i
 		grid->SetColLabelValue(i, arr_str[i]);
 		grid->DisableColResize(i);
 	}	
+
+	delete[] arr_str;
 
 	for (int i = 0; i < grid->GetNumberRows(); ++i) {
 		for (int j = 0; j < grid->GetNumberCols(); ++j) {
@@ -794,7 +796,8 @@ void FirstEnterDlg::OnOkBtn(wxCommandEvent& event) {
 		else {
 			MainFrame* p_wnd = (MainFrame*)GetParent();
 			auto it = find_if(p_wnd->start_users.begin(), p_wnd->start_users.end(), [this](User& u) { return u.name == userNameForSearch; });
-			if (userNameForSearch == wxT("ADMIN")) {
+			if (wxString_to_lowercase(userNameForSearch) == wxString_to_lowercase(wxString(wxT("ADMIN")))) {
+			//if (userNameForSearch == wxT("ADMIN")) {
 				it->psw = this->GetFirstPsw();		// Пароль аддмина может быть любым
 				Destroy();
 			}

@@ -76,6 +76,7 @@ private:
 	SetMinMaxDlg* setminmax_dlg;
 public:
 	std::vector<User> users;		// Переписать под мапу (быстрее поиск)
+	wxString AdminName;
 };
 
 

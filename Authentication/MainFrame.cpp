@@ -72,8 +72,7 @@ const wxString& name) : wxFrame(parent, id, title, pos, size, style, name)
 	string s_maxtime;
 
 	string list_pswds;
-	//bool b_isblock;
-	//bool b_islimit;
+
 	std::ifstream fin("users.txt");
 	if (fin.is_open())
 	{
@@ -91,6 +90,7 @@ const wxString& name) : wxFrame(parent, id, title, pos, size, style, name)
 			wxString s3(s_mintime);
 			wxString s4(s_mintime);
 
+			// Вектор уже использованных паролей
 			vector<wxString> vec;
 
 			while (list_pswds.size()) {
@@ -111,11 +111,10 @@ const wxString& name) : wxFrame(parent, id, title, pos, size, style, name)
 	}
 	else {	// Если не было файла, то создаем новый с АДМИНОМ
 		isFirstStart = true;
-		//wxMessageBox(wxT("can't open"));
 		std::ofstream fout("users.txt");
 		fout << "ADMIN\n";
 		fout << "\n";
-		fout << "\n";		// для списка паролей
+		fout << "\n";
 		fout << "0\n";
 		fout << "0\n";
 		fout << "0\n";
@@ -182,65 +181,71 @@ void MainFrame::OnMenuAbout(wxMenuEvent& event) {
 
 void MainFrame::EnterToSystem(bool isSucces, wxString login) {
 	std::ofstream fin_aud("audit.txt", std::ios_base::app);
-	// current date/time based on current system
 	time_t now = time(0);
-	// convert now to string form
 	char* dt = ctime(&now);
 	if (isSucces) {
 		fin_aud << "Успешный вход" << "\n";
 		fin_aud << login << "\n";
 		fin_aud << dt;
-
-		//fin_aud << "Успешный вход: " << "Имя пользователя:" << login << " " << "Дата/время:" << dt;
 	}
 	else {
 		if (login == wxT("")) {
 			fin_aud << "Неуспешный вход" << "\n";
 			fin_aud << "Несуществующий логин" << "\n";
 			fin_aud << dt;
-
-			//fin_aud << "Неуспешный вход: " << "Имя пользователя:" << "Несуществующий логин " << "Дата/время:" << dt;
 		}
 		else {
 			fin_aud << "Неуспешный вход" << "\n";
 			fin_aud << login << "\n";
 			fin_aud << dt;
-
-			//fin_aud << "Неуспешный вход: " << "Имя пользователя:" << login << " " << "Дата/время:" << dt;
 		}
 	}
 }
 
-void MainFrame::OnOkClick(wxCommandEvent& event) {
-	if (user_name->GetValue() == wxT("ADMIN")) {	// Вход администратора
+string wxString_to_lowercase(const wxString &str) {
+	string std_str = str.ToStdString();
+	std::transform(std_str.begin(), std_str.end(), std_str.begin(),
+		[](unsigned char c) { return std::tolower(c); });
 
-		auto it = find_if(start_users.begin(), start_users.end(), [](User& u) { return u.name == wxT("ADMIN"); });
+	return std_str;
+}
+
+void MainFrame::OnOkClick(wxCommandEvent& event) {
+	// Для сравнения логинов переведем их в нижний регистр
+	string s_username = wxString_to_lowercase(user_name->GetValue());
+	string s_adminname = wxString_to_lowercase(wxString(wxT("ADMIN")));
+
+	if (s_username == s_adminname) {	// Вход администратора
+		auto it = find_if(start_users.begin(), start_users.end(), [s_adminname](User& u) {
+			string u_name = wxString_to_lowercase(u.name);
+			return u_name == s_adminname; });
 		if (it != start_users.end()) {
 			if (it->psw == wxT("")) {	// Первый вход
 				first_enter = new FirstEnterDlg(this);
-				first_enter->userNameForSearch = wxT("ADMIN");
+				first_enter->userNameForSearch = it->name;
 				first_enter->ShowModal();
 			}
 			else {		// Не первый вход
 				if (password->GetValue() == it->psw) {
 
-					EnterToSystem(true, wxT("ADMIN"));
+					EnterToSystem(true, it->name);
 
 					admin_frame = new AdminFrame(NULL, wxID_ANY, wxT("Раздел администратора"), wxPoint(-1, -1), wxSize(500, 500));
 					admin_frame->users = start_users;
+					admin_frame->AdminName = it->name;
 					Destroy();
 					admin_frame->Show(true);
 				}
 				else {
 					if (!num_mis) {
-						EnterToSystem(false, wxT("ADMIN"));
+						EnterToSystem(false, it->name);
 						wxMessageBox(wxT("Вы исчерпали все попытки"));
 						Destroy();
 					}
 					else {
 						wxMessageBox(wxString::Format(wxT("Неправильный пароль, попробуйте ещё раз\n(осталось %d попытки)"), num_mis));
 
-						EnterToSystem(false, wxT("ADMIN"));
+						EnterToSystem(false, it->name);
 
 						num_mis--;
 					}
@@ -249,22 +254,22 @@ void MainFrame::OnOkClick(wxCommandEvent& event) {
 		}
 	}
 	else {		// Вход пользователя
-		auto it = find_if(start_users.begin(), start_users.end(), [this](User& u) { return u.name == this->GetUserName(); });
+		auto it = find_if(start_users.begin(), start_users.end(), [this, s_username](User& u) { 
+			string u_name = wxString_to_lowercase(u.name);
+			return u_name == s_username; });
 		if (it == start_users.end()) {
 			if (user_name->GetValue() == wxT("")) {
 				wxMessageBox(wxT("Заполните поле с именем"), wxT("Ошибка при входе"));
 			}
 			else {
 				wxMessageBox(wxT("Пользователя с таким именем не существует"), wxT("Ошибка при входе"));
-
 				EnterToSystem(false, wxT(""));
-
 			}
 		}
 		else {
 			if (it->psw == wxT("")) {	// Первый вход
 				first_enter = new FirstEnterDlg(this);
-				first_enter->userNameForSearch = this->GetUserName();
+				first_enter->userNameForSearch = it->name;
 				first_enter->ShowModal();
 			}
 			else {		// Не первый вход
@@ -275,16 +280,16 @@ void MainFrame::OnOkClick(wxCommandEvent& event) {
 							if (!re.Matches(this->GetUserPsw())) {
 								wxMessageBox(wxT("Ваш пароль больше не соответствует минимальным требованиям\n(чередование знаков препинания, символов кириллицы, цифр)\nУстановите новый пароль"));
 								first_enter = new FirstEnterDlg(this);
-								first_enter->userNameForSearch = this->GetUserName();
+								first_enter->userNameForSearch = it->name;
 								first_enter->ShowModal();
 							}
 							else {
 								user_frame = new UserFrame(NULL, wxID_ANY, wxT("Раздел пользователя"));
 								user_frame->user_users = start_users;
-								user_frame->hello->SetLabel(wxString::Format(wxT("Hello, %s!"), this->GetUserName()));
-								user_frame->UserName = this->GetUserName();
+								user_frame->hello->SetLabel(wxString::Format(wxT("Hello, %s!"), it->name));
+								user_frame->UserName = it->name;
 
-								EnterToSystem(true, this->GetUserName());
+								EnterToSystem(true, it->name);
 
 								Destroy();
 								user_frame->Show(true);
@@ -293,24 +298,25 @@ void MainFrame::OnOkClick(wxCommandEvent& event) {
 						else {
 							user_frame = new UserFrame(NULL, wxID_ANY, wxT("Раздел пользователя"));
 							user_frame->user_users = start_users;
-							user_frame->hello->SetLabel(wxString::Format(wxT("Hello, %s!"), this->GetUserName()));
-							user_frame->UserName = this->GetUserName();
+							user_frame->hello->SetLabel(wxString::Format(wxT("Hello, %s!"), it->name));
+							user_frame->UserName = it->name;
 
-							EnterToSystem(true, this->GetUserName());
+							EnterToSystem(true, it->name);
 
 							Destroy();
 							user_frame->Show(true);
 						}
 					}
 					else {
-						wxMessageBox(wxT("Ваш аккаунт заблокирован, обратитесь к администратору"));
+						// Нужно ли учитывать такие попытки входа в аудите???
+						wxMessageBox(wxT("Ваш аккаунт заблокирован, обратитесь к администратору"));		
 						Destroy();
 					}
 				}
 				else {
 					if (!num_mis) {
 
-						EnterToSystem(false, this->GetUserName());
+						EnterToSystem(false, it->name);
 
 						wxMessageBox(wxT("Вы исчерпали все попытки"));
 						Destroy();
@@ -318,7 +324,7 @@ void MainFrame::OnOkClick(wxCommandEvent& event) {
 					else {
 						wxMessageBox(wxString::Format(wxT("Неправильный пароль, попробуйте ещё раз\n(осталось %d попытки)"), num_mis));
 
-						EnterToSystem(false, this->GetUserName());
+						EnterToSystem(false, it->name);
 
 						num_mis--;
 					}

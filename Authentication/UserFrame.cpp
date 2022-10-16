@@ -46,16 +46,12 @@ void UserFrame::OnChangePsw(wxMenuEvent& event) {
 
 void UserFrame::ExitFromSystem(wxString login) {
 	std::ofstream fin_aud("audit.txt", std::ios_base::app);
-	// current date/time based on current system
 	time_t now = time(0);
-	// convert now to string form
 	char* dt = ctime(&now);
 
 	fin_aud << "Успешный выход" << "\n";
 	fin_aud << login << "\n";
 	fin_aud << dt;
-
-	//fin_aud << "Успешный выход:" << "\t" << "Имя пользователя:" << login << "\t" << "Дата/время:" << dt;
 }
 
 void UserFrame::OnLogOut(wxMenuEvent& event) {

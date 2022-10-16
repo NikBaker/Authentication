@@ -57,3 +57,4 @@ private:
 	bool isFirstStart;		// Флаг первого входа в систему
 };
 
+string wxString_to_lowercase(const wxString& str);
