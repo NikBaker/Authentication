@@ -1,8 +1,8 @@
-#pragma once
+п»ї#pragma once
 #include "wx/wx.h"
 #include <vector>
 
-// Структура пользователя
+// РЎС‚СЂСѓРєС‚СѓСЂР° РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
 struct User {
 	User(wxString _name, wxString _psw, bool _is_block, bool _is_limit, int _min_pswtime, int _max_pswtime, std::vector<wxString> _list_of_psw) {
 		name = _name;
@@ -14,15 +14,15 @@ struct User {
 		pswds_list = _list_of_psw;
 	}
 
-	wxString name;		// Имя
-	wxString psw;		// Пароль
-	bool is_block;		// флаг блокировки
-	bool is_limit;		// флаг ограничения на пароль
+	wxString name;		// РРјСЏ
+	wxString psw;		// РџР°СЂРѕР»СЊ
+	bool is_block;		// С„Р»Р°Рі Р±Р»РѕРєРёСЂРѕРІРєРё
+	bool is_limit;		// С„Р»Р°Рі РѕРіСЂР°РЅРёС‡РµРЅРёСЏ РЅР° РїР°СЂРѕР»СЊ
 
-	int min_pswtime;	// Минимальный срок действия пароля (пока в секундах)
-	int max_pswtime;	// Максимальный срок действия пароля (пока в секундах)
+	int min_pswtime;	// РњРёРЅРёРјР°Р»СЊРЅС‹Р№ СЃСЂРѕРє РґРµР№СЃС‚РІРёСЏ РїР°СЂРѕР»СЏ (РїРѕРєР° РІ СЃРµРєСѓРЅРґР°С…)
+	int max_pswtime;	// РњР°РєСЃРёРјР°Р»СЊРЅС‹Р№ СЃСЂРѕРє РґРµР№СЃС‚РІРёСЏ РїР°СЂРѕР»СЏ (РїРѕРєР° РІ СЃРµРєСѓРЅРґР°С…)
 
-	//int last_changepsw;	// Время последней смены пароля пользователем
+	//int last_changepsw;	// Р’СЂРµРјСЏ РїРѕСЃР»РµРґРЅРµР№ СЃРјРµРЅС‹ РїР°СЂРѕР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј
 
-	std::vector<wxString> pswds_list;	// Список уже использованных паролей
+	std::vector<wxString> pswds_list;	// РЎРїРёСЃРѕРє СѓР¶Рµ РёСЃРїРѕР»СЊР·РѕРІР°РЅРЅС‹С… РїР°СЂРѕР»РµР№
 };

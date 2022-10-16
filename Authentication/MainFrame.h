@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 #include "wx/wx.h"
 #include <wx/regex.h>
 
@@ -20,7 +20,7 @@ class AdminFrame;
 class FirstEnterDlg;
 
 /*
-Класс стартового окна
+РљР»Р°СЃСЃ СЃС‚Р°СЂС‚РѕРІРѕРіРѕ РѕРєРЅР°
 */
 class MainFrame : public wxFrame
 {	
@@ -42,19 +42,19 @@ public:
 	wxString GetUserName() { return user_name->GetValue(); }
 	wxString GetUserPsw() { return password->GetValue(); }
 
-	std::vector<User> start_users;	// Переписать под мапу (быстрее поиск)
+	std::vector<User> start_users;	// РџРµСЂРµРїРёСЃР°С‚СЊ РїРѕРґ РјР°РїСѓ (Р±С‹СЃС‚СЂРµРµ РїРѕРёСЃРє)
 
-	void EnterToSystem(bool isSucces, wxString login);	// Функция для аудита входов в систему
+	void EnterToSystem(bool isSucces, wxString login);	// Р¤СѓРЅРєС†РёСЏ РґР»СЏ Р°СѓРґРёС‚Р° РІС…РѕРґРѕРІ РІ СЃРёСЃС‚РµРјСѓ
 
 private:
-	wxTextCtrl* user_name;	// Поле с логином
-	wxTextCtrl* password;	// Поле с паролем
+	wxTextCtrl* user_name;	// РџРѕР»Рµ СЃ Р»РѕРіРёРЅРѕРј
+	wxTextCtrl* password;	// РџРѕР»Рµ СЃ РїР°СЂРѕР»РµРј
 	UserFrame* user_frame;
 	AdminFrame* admin_frame;
 	FirstEnterDlg* first_enter;
 
-	int num_mis;			// Количество неправильных вводов пароля
-	bool isFirstStart;		// Флаг первого входа в систему
+	int num_mis;			// РљРѕР»РёС‡РµСЃС‚РІРѕ РЅРµРїСЂР°РІРёР»СЊРЅС‹С… РІРІРѕРґРѕРІ РїР°СЂРѕР»СЏ
+	bool isFirstStart;		// Р¤Р»Р°Рі РїРµСЂРІРѕРіРѕ РІС…РѕРґР° РІ СЃРёСЃС‚РµРјСѓ
 };
 
 string wxString_to_lowercase(const wxString& str);

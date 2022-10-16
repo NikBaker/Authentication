@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "wx/wx.h"
 
 class AuthApp : public wxApp

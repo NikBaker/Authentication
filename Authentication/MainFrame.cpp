@@ -1,4 +1,4 @@
-#include "MainFrame.h"
+п»ї#include "MainFrame.h"
 
 MainFrame::MainFrame(wxWindow* parent,
 wxWindowID id,
@@ -10,14 +10,14 @@ const wxString& name) : wxFrame(parent, id, title, pos, size, style, name)
 {
 	num_mis = 2;
 
-	// Меню
+	// РњРµРЅСЋ
 	wxMenuBar* menu_bar = new wxMenuBar;
 	wxMenu* file = new wxMenu;
-	file->Append(wxID_EXIT, wxT("Выход\tCtrl+e"));
+	file->Append(wxID_EXIT, wxT("Р’С‹С…РѕРґ\tCtrl+e"));
 	wxMenu* help = new wxMenu;
-	help->Append(wxID_ABOUT, wxT("О программе...\tCtrl+h"));
-	menu_bar->Append(file, wxT("Файл"));
-	menu_bar->Append(help, wxT("Справка"));
+	help->Append(wxID_ABOUT, wxT("Рћ РїСЂРѕРіСЂР°РјРјРµ...\tCtrl+h"));
+	menu_bar->Append(file, wxT("Р¤Р°Р№Р»"));
+	menu_bar->Append(help, wxT("РЎРїСЂР°РІРєР°"));
 
 	SetMenuBar(menu_bar);
 
@@ -29,13 +29,13 @@ const wxString& name) : wxFrame(parent, id, title, pos, size, style, name)
 	wxBoxSizer* h_box3 = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* around_box = new wxBoxSizer(wxVERTICAL);
 
-	wxStaticText* t_username = new wxStaticText(pnl, wxID_ANY, wxT("Имя пользователя:"));
+	wxStaticText* t_username = new wxStaticText(pnl, wxID_ANY, wxT("РРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ:"));
 	h_box1->Add(t_username, 1, wxLEFT | wxRIGHT, 5);
 	user_name = new wxTextCtrl(pnl, wxID_ANY, wxT(""), wxPoint(-1, -1), wxSize(200, -1));
 	h_box1->Add(user_name, 1, wxLEFT | wxRIGHT, 5);
 	v_box->Add(h_box1, 1, wxTOP | wxBOTTOM | wxALIGN_CENTRE_HORIZONTAL, 5);
 
-	wxStaticText* t_password = new wxStaticText(pnl, wxID_ANY, wxT("Пароль:"));
+	wxStaticText* t_password = new wxStaticText(pnl, wxID_ANY, wxT("РџР°СЂРѕР»СЊ:"));
 	h_box2->Add(t_password, 1, wxLEFT | wxRIGHT, 5);
 	password = new wxTextCtrl(pnl, wxID_ANY, wxT(""), wxPoint(-1, -1), wxSize(200, -1), wxTE_PASSWORD);
 	h_box2->Add(password, 1, wxLEFT | wxRIGHT, 5);
@@ -44,7 +44,7 @@ const wxString& name) : wxFrame(parent, id, title, pos, size, style, name)
 	wxButton* btn_ok = new wxButton(pnl, wxID_OK);
 	h_box3->Add(btn_ok, 0, wxLEFT | wxRIGHT, 15);
 	btn_ok->SetFocus();
-	wxButton* btn_cancel = new wxButton(pnl, wxID_CANCEL, wxT("Отмена"));
+	wxButton* btn_cancel = new wxButton(pnl, wxID_CANCEL, wxT("РћС‚РјРµРЅР°"));
 	h_box3->Add(btn_cancel, 0, wxLEFT | wxRIGHT, 15);
 	v_box->Add(h_box3, 1, wxTOP | wxBOTTOM | wxALIGN_RIGHT, 5);
 
@@ -54,15 +54,15 @@ const wxString& name) : wxFrame(parent, id, title, pos, size, style, name)
 
 	Centre();
 
-	// Биндим кнопки и пункты меню
+	// Р‘РёРЅРґРёРј РєРЅРѕРїРєРё Рё РїСѓРЅРєС‚С‹ РјРµРЅСЋ
 	Connect(wxID_EXIT, wxEVT_MENU, wxMenuEventHandler(MainFrame::OnMenuExit));
 	Connect(wxID_ABOUT, wxEVT_MENU, wxMenuEventHandler(MainFrame::OnMenuAbout));
 	Connect(wxID_CANCEL, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MainFrame::OnCancelClick));
 	Connect(wxID_OK, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(MainFrame::OnOkClick));
 
-	// Проверяем наличие файла с пользователями
-	// Если файла нет, создаем новый только с данными Админа
-	// Если файл есть, то заносим данные о пользователях в вектор структур
+	// РџСЂРѕРІРµСЂСЏРµРј РЅР°Р»РёС‡РёРµ С„Р°Р№Р»Р° СЃ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏРјРё
+	// Р•СЃР»Рё С„Р°Р№Р»Р° РЅРµС‚, СЃРѕР·РґР°РµРј РЅРѕРІС‹Р№ С‚РѕР»СЊРєРѕ СЃ РґР°РЅРЅС‹РјРё РђРґРјРёРЅР°
+	// Р•СЃР»Рё С„Р°Р№Р» РµСЃС‚СЊ, С‚Рѕ Р·Р°РЅРѕСЃРёРј РґР°РЅРЅС‹Рµ Рѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏС… РІ РІРµРєС‚РѕСЂ СЃС‚СЂСѓРєС‚СѓСЂ
 
 	string s_name;
 	string s_psw;
@@ -90,7 +90,7 @@ const wxString& name) : wxFrame(parent, id, title, pos, size, style, name)
 			wxString s3(s_mintime);
 			wxString s4(s_mintime);
 
-			// Вектор уже использованных паролей
+			// Р’РµРєС‚РѕСЂ СѓР¶Рµ РёСЃРїРѕР»СЊР·РѕРІР°РЅРЅС‹С… РїР°СЂРѕР»РµР№
 			vector<wxString> vec;
 
 			while (list_pswds.size()) {
@@ -109,7 +109,7 @@ const wxString& name) : wxFrame(parent, id, title, pos, size, style, name)
 		}
 		fin.close();
 	}
-	else {	// Если не было файла, то создаем новый с АДМИНОМ
+	else {	// Р•СЃР»Рё РЅРµ Р±С‹Р»Рѕ С„Р°Р№Р»Р°, С‚Рѕ СЃРѕР·РґР°РµРј РЅРѕРІС‹Р№ СЃ РђР”РњРРќРћРњ
 		isFirstStart = true;
 		std::ofstream fout("users.txt");
 		fout << "ADMIN\n";
@@ -125,12 +125,12 @@ const wxString& name) : wxFrame(parent, id, title, pos, size, style, name)
 		fout.close();
 	}
 
-	// Файл айдита
+	// Р¤Р°Р№Р» Р°Р№РґРёС‚Р°
 	std::ifstream fin_aud("audit.txt");
 	if (!fin_aud.is_open())
 	{
 		std::ofstream fout("audit.txt");
-		fout << "Файл аудита:\n";
+		fout << "Р¤Р°Р№Р» Р°СѓРґРёС‚Р°:\n";
 		fout.close();
 	}
 };
@@ -176,7 +176,7 @@ void MainFrame::OnMenuExit(wxMenuEvent& event) {
 }
 
 void MainFrame::OnMenuAbout(wxMenuEvent& event) {
-	wxMessageBox(wxT("Щучкин Н.Ю. \nГруппа А-13а-19 \nКурсовая работа"), wxT("О программе"));
+	wxMessageBox(wxT("Р©СѓС‡РєРёРЅ Рќ.Р®. \nР“СЂСѓРїРїР° Рђ-13Р°-19 \nРљСѓСЂСЃРѕРІР°СЏ СЂР°Р±РѕС‚Р°"), wxT("Рћ РїСЂРѕРіСЂР°РјРјРµ"));
 }
 
 void MainFrame::EnterToSystem(bool isSucces, wxString login) {
@@ -184,18 +184,18 @@ void MainFrame::EnterToSystem(bool isSucces, wxString login) {
 	time_t now = time(0);
 	char* dt = ctime(&now);
 	if (isSucces) {
-		fin_aud << "Успешный вход" << "\n";
+		fin_aud << "РЈСЃРїРµС€РЅС‹Р№ РІС…РѕРґ" << "\n";
 		fin_aud << login << "\n";
 		fin_aud << dt;
 	}
 	else {
 		if (login == wxT("")) {
-			fin_aud << "Неуспешный вход" << "\n";
-			fin_aud << "Несуществующий логин" << "\n";
+			fin_aud << "РќРµСѓСЃРїРµС€РЅС‹Р№ РІС…РѕРґ" << "\n";
+			fin_aud << "РќРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ Р»РѕРіРёРЅ" << "\n";
 			fin_aud << dt;
 		}
 		else {
-			fin_aud << "Неуспешный вход" << "\n";
+			fin_aud << "РќРµСѓСЃРїРµС€РЅС‹Р№ РІС…РѕРґ" << "\n";
 			fin_aud << login << "\n";
 			fin_aud << dt;
 		}
@@ -211,26 +211,26 @@ string wxString_to_lowercase(const wxString &str) {
 }
 
 void MainFrame::OnOkClick(wxCommandEvent& event) {
-	// Для сравнения логинов переведем их в нижний регистр
+	// Р”Р»СЏ СЃСЂР°РІРЅРµРЅРёСЏ Р»РѕРіРёРЅРѕРІ РїРµСЂРµРІРµРґРµРј РёС… РІ РЅРёР¶РЅРёР№ СЂРµРіРёСЃС‚СЂ
 	string s_username = wxString_to_lowercase(user_name->GetValue());
 	string s_adminname = wxString_to_lowercase(wxString(wxT("ADMIN")));
 
-	if (s_username == s_adminname) {	// Вход администратора
+	if (s_username == s_adminname) {	// Р’С…РѕРґ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°
 		auto it = find_if(start_users.begin(), start_users.end(), [s_adminname](User& u) {
 			string u_name = wxString_to_lowercase(u.name);
 			return u_name == s_adminname; });
 		if (it != start_users.end()) {
-			if (it->psw == wxT("")) {	// Первый вход
+			if (it->psw == wxT("")) {	// РџРµСЂРІС‹Р№ РІС…РѕРґ
 				first_enter = new FirstEnterDlg(this);
 				first_enter->userNameForSearch = it->name;
 				first_enter->ShowModal();
 			}
-			else {		// Не первый вход
+			else {		// РќРµ РїРµСЂРІС‹Р№ РІС…РѕРґ
 				if (password->GetValue() == it->psw) {
 
 					EnterToSystem(true, it->name);
 
-					admin_frame = new AdminFrame(NULL, wxID_ANY, wxT("Раздел администратора"), wxPoint(-1, -1), wxSize(500, 500));
+					admin_frame = new AdminFrame(NULL, wxID_ANY, wxT("Р Р°Р·РґРµР» Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°"), wxPoint(-1, -1), wxSize(500, 500));
 					admin_frame->users = start_users;
 					admin_frame->AdminName = it->name;
 					Destroy();
@@ -239,11 +239,11 @@ void MainFrame::OnOkClick(wxCommandEvent& event) {
 				else {
 					if (!num_mis) {
 						EnterToSystem(false, it->name);
-						wxMessageBox(wxT("Вы исчерпали все попытки"));
+						wxMessageBox(wxT("Р’С‹ РёСЃС‡РµСЂРїР°Р»Рё РІСЃРµ РїРѕРїС‹С‚РєРё"));
 						Destroy();
 					}
 					else {
-						wxMessageBox(wxString::Format(wxT("Неправильный пароль, попробуйте ещё раз\n(осталось %d попытки)"), num_mis));
+						wxMessageBox(wxString::Format(wxT("РќРµРїСЂР°РІРёР»СЊРЅС‹Р№ РїР°СЂРѕР»СЊ, РїРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰С‘ СЂР°Р·\n(РѕСЃС‚Р°Р»РѕСЃСЊ %d РїРѕРїС‹С‚РєРё)"), num_mis));
 
 						EnterToSystem(false, it->name);
 
@@ -253,38 +253,38 @@ void MainFrame::OnOkClick(wxCommandEvent& event) {
 			}
 		}
 	}
-	else {		// Вход пользователя
+	else {		// Р’С…РѕРґ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
 		auto it = find_if(start_users.begin(), start_users.end(), [this, s_username](User& u) { 
 			string u_name = wxString_to_lowercase(u.name);
 			return u_name == s_username; });
 		if (it == start_users.end()) {
 			if (user_name->GetValue() == wxT("")) {
-				wxMessageBox(wxT("Заполните поле с именем"), wxT("Ошибка при входе"));
+				wxMessageBox(wxT("Р—Р°РїРѕР»РЅРёС‚Рµ РїРѕР»Рµ СЃ РёРјРµРЅРµРј"), wxT("РћС€РёР±РєР° РїСЂРё РІС…РѕРґРµ"));
 			}
 			else {
-				wxMessageBox(wxT("Пользователя с таким именем не существует"), wxT("Ошибка при входе"));
+				wxMessageBox(wxT("РџРѕР»СЊР·РѕРІР°С‚РµР»СЏ СЃ С‚Р°РєРёРј РёРјРµРЅРµРј РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚"), wxT("РћС€РёР±РєР° РїСЂРё РІС…РѕРґРµ"));
 				EnterToSystem(false, wxT(""));
 			}
 		}
 		else {
-			if (it->psw == wxT("")) {	// Первый вход
+			if (it->psw == wxT("")) {	// РџРµСЂРІС‹Р№ РІС…РѕРґ
 				first_enter = new FirstEnterDlg(this);
 				first_enter->userNameForSearch = it->name;
 				first_enter->ShowModal();
 			}
-			else {		// Не первый вход
+			else {		// РќРµ РїРµСЂРІС‹Р№ РІС…РѕРґ
 				if (this->GetUserPsw() == it->psw) {
 					if (!it->is_block) {
 						if (it->is_limit) {
-							wxRegEx re("^(([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*[А-я]+[^.,!?:;1-9]*[1-9]+[^.,!?:;А-я]*)*(([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*[А-я]+[^.,!?:;1-9]*)|([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*))?)$");
+							wxRegEx re("^(([^.,!?:;Рђ-СЏ1-9]*[.,!?:;]+[^Рђ-СЏ1-9]*[Рђ-СЏ]+[^.,!?:;1-9]*[1-9]+[^.,!?:;Рђ-СЏ]*)*(([^.,!?:;Рђ-СЏ1-9]*[.,!?:;]+[^Рђ-СЏ1-9]*[Рђ-СЏ]+[^.,!?:;1-9]*)|([^.,!?:;Рђ-СЏ1-9]*[.,!?:;]+[^Рђ-СЏ1-9]*))?)$");
 							if (!re.Matches(this->GetUserPsw())) {
-								wxMessageBox(wxT("Ваш пароль больше не соответствует минимальным требованиям\n(чередование знаков препинания, символов кириллицы, цифр)\nУстановите новый пароль"));
+								wxMessageBox(wxT("Р’Р°С€ РїР°СЂРѕР»СЊ Р±РѕР»СЊС€Рµ РЅРµ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓРµС‚ РјРёРЅРёРјР°Р»СЊРЅС‹Рј С‚СЂРµР±РѕРІР°РЅРёСЏРј\n(С‡РµСЂРµРґРѕРІР°РЅРёРµ Р·РЅР°РєРѕРІ РїСЂРµРїРёРЅР°РЅРёСЏ, СЃРёРјРІРѕР»РѕРІ РєРёСЂРёР»Р»РёС†С‹, С†РёС„СЂ)\nРЈСЃС‚Р°РЅРѕРІРёС‚Рµ РЅРѕРІС‹Р№ РїР°СЂРѕР»СЊ"));
 								first_enter = new FirstEnterDlg(this);
 								first_enter->userNameForSearch = it->name;
 								first_enter->ShowModal();
 							}
 							else {
-								user_frame = new UserFrame(NULL, wxID_ANY, wxT("Раздел пользователя"));
+								user_frame = new UserFrame(NULL, wxID_ANY, wxT("Р Р°Р·РґРµР» РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"));
 								user_frame->user_users = start_users;
 								user_frame->hello->SetLabel(wxString::Format(wxT("Hello, %s!"), it->name));
 								user_frame->UserName = it->name;
@@ -296,7 +296,7 @@ void MainFrame::OnOkClick(wxCommandEvent& event) {
 							}
 						}
 						else {
-							user_frame = new UserFrame(NULL, wxID_ANY, wxT("Раздел пользователя"));
+							user_frame = new UserFrame(NULL, wxID_ANY, wxT("Р Р°Р·РґРµР» РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"));
 							user_frame->user_users = start_users;
 							user_frame->hello->SetLabel(wxString::Format(wxT("Hello, %s!"), it->name));
 							user_frame->UserName = it->name;
@@ -308,8 +308,8 @@ void MainFrame::OnOkClick(wxCommandEvent& event) {
 						}
 					}
 					else {
-						// Нужно ли учитывать такие попытки входа в аудите???
-						wxMessageBox(wxT("Ваш аккаунт заблокирован, обратитесь к администратору"));		
+						// РќСѓР¶РЅРѕ Р»Рё СѓС‡РёС‚С‹РІР°С‚СЊ С‚Р°РєРёРµ РїРѕРїС‹С‚РєРё РІС…РѕРґР° РІ Р°СѓРґРёС‚Рµ???
+						wxMessageBox(wxT("Р’Р°С€ Р°РєРєР°СѓРЅС‚ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅ, РѕР±СЂР°С‚РёС‚РµСЃСЊ Рє Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂСѓ"));		
 						Destroy();
 					}
 				}
@@ -318,11 +318,11 @@ void MainFrame::OnOkClick(wxCommandEvent& event) {
 
 						EnterToSystem(false, it->name);
 
-						wxMessageBox(wxT("Вы исчерпали все попытки"));
+						wxMessageBox(wxT("Р’С‹ РёСЃС‡РµСЂРїР°Р»Рё РІСЃРµ РїРѕРїС‹С‚РєРё"));
 						Destroy();
 					}
 					else {
-						wxMessageBox(wxString::Format(wxT("Неправильный пароль, попробуйте ещё раз\n(осталось %d попытки)"), num_mis));
+						wxMessageBox(wxString::Format(wxT("РќРµРїСЂР°РІРёР»СЊРЅС‹Р№ РїР°СЂРѕР»СЊ, РїРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰С‘ СЂР°Р·\n(РѕСЃС‚Р°Р»РѕСЃСЊ %d РїРѕРїС‹С‚РєРё)"), num_mis));
 
 						EnterToSystem(false, it->name);
 

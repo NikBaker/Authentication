@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 #include "AdminFrame.h"
 #include "MainFrame.h"
 #include <wx/regex.h>
@@ -33,7 +33,7 @@ public:
 	void OnMenuExit(wxMenuEvent& event);
 	void OnClose(wxCommandEvent& event);
 
-	void ExitFromSystem(wxString login);	// Функция для аудита выходов из систему
+	void ExitFromSystem(wxString login);	// Р¤СѓРЅРєС†РёСЏ РґР»СЏ Р°СѓРґРёС‚Р° РІС‹С…РѕРґРѕРІ РёР· СЃРёСЃС‚РµРјСѓ
 
 	vector<User> user_users;
 	wxStaticText* hello;

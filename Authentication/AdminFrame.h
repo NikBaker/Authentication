@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 #include "wx/wx.h"
 #include <wx/regex.h>
 #include <wx/grid.h>
@@ -32,7 +32,7 @@ class SetMinMaxDlg;
 class AuditOperationsDlg;
 class AuditDlg;
 
-// Класс окна админа
+// РљР»Р°СЃСЃ РѕРєРЅР° Р°РґРјРёРЅР°
 class AdminFrame : public wxFrame
 {
 public:
@@ -58,15 +58,15 @@ public:
 	void OnDClick(wxCommandEvent& event);
 	void OnClose(wxCommandEvent& event);
 
-	void ExitFromSystem(wxString login);	// Функция для аудита выходов из систему
-	void CnangeUserData(wxString operation, wxString username);	// Функция для аудита изменений в файле учетных записей
+	void ExitFromSystem(wxString login);	// Р¤СѓРЅРєС†РёСЏ РґР»СЏ Р°СѓРґРёС‚Р° РІС‹С…РѕРґРѕРІ РёР· СЃРёСЃС‚РµРјСѓ
+	void CnangeUserData(wxString operation, wxString username);	// Р¤СѓРЅРєС†РёСЏ РґР»СЏ Р°СѓРґРёС‚Р° РёР·РјРµРЅРµРЅРёР№ РІ С„Р°Р№Р»Рµ СѓС‡РµС‚РЅС‹С… Р·Р°РїРёСЃРµР№
 
 	void OnChange_block(wxCommandEvent& event);
 	void OnChange_limit(wxCommandEvent& event);
 
 
 private:
-	wxListBox* list;	// Листбокс для отображения имен пользователей
+	wxListBox* list;	// Р›РёСЃС‚Р±РѕРєСЃ РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ РёРјРµРЅ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№
 	wxCheckBox* block;	
 	wxCheckBox* limit;
 	ChangePswDlg* change_dlg;
@@ -75,12 +75,12 @@ private:
 	AddNewUserDlg* addnew_dlg;
 	SetMinMaxDlg* setminmax_dlg;
 public:
-	std::vector<User> users;		// Переписать под мапу (быстрее поиск)
+	std::vector<User> users;		// РџРµСЂРµРїРёСЃР°С‚СЊ РїРѕРґ РјР°РїСѓ (Р±С‹СЃС‚СЂРµРµ РїРѕРёСЃРє)
 	wxString AdminName;
 };
 
 
-// Класс диалога первого входа в систему
+// РљР»Р°СЃСЃ РґРёР°Р»РѕРіР° РїРµСЂРІРѕРіРѕ РІС…РѕРґР° РІ СЃРёСЃС‚РµРјСѓ
 class FirstEnterDlg : public wxDialog
 {
 public:
@@ -98,7 +98,7 @@ private:
 	wxTextCtrl* confirm_psw;
 };
 
-// Класс диалога смены пароля
+// РљР»Р°СЃСЃ РґРёР°Р»РѕРіР° СЃРјРµРЅС‹ РїР°СЂРѕР»СЏ
 class ChangePswDlg : public wxDialog
 {
 public:
@@ -130,7 +130,7 @@ public:
 	wxString dateTime;
 };
 
-// Класс диалога аудита изменений в файле учетных записей
+// РљР»Р°СЃСЃ РґРёР°Р»РѕРіР° Р°СѓРґРёС‚Р° РёР·РјРµРЅРµРЅРёР№ РІ С„Р°Р№Р»Рµ СѓС‡РµС‚РЅС‹С… Р·Р°РїРёСЃРµР№
 class AuditOperationsDlg : public wxDialog
 {
 public:
@@ -150,7 +150,7 @@ protected:
 	wxButton* btn_query;
 };
 
-// Класс диалога добавления нового пользователя админом
+// РљР»Р°СЃСЃ РґРёР°Р»РѕРіР° РґРѕР±Р°РІР»РµРЅРёСЏ РЅРѕРІРѕРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ Р°РґРјРёРЅРѕРј
 class AddNewUserDlg : public wxDialog
 {
 public:
@@ -162,7 +162,7 @@ public:
 	wxCheckBox* limit;
 };
 
-// Класс диалога установки минимального и максимального времени действия пароля
+// РљР»Р°СЃСЃ РґРёР°Р»РѕРіР° СѓСЃС‚Р°РЅРѕРІРєРё РјРёРЅРёРјР°Р»СЊРЅРѕРіРѕ Рё РјР°РєСЃРёРјР°Р»СЊРЅРѕРіРѕ РІСЂРµРјРµРЅРё РґРµР№СЃС‚РІРёСЏ РїР°СЂРѕР»СЏ
 class SetMinMaxDlg : public wxDialog
 {
 public:
