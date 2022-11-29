@@ -73,6 +73,9 @@ const wxString& name) : wxFrame(parent, id, title, pos, size, style, name)
 
 	string list_pswds;
 
+	string s_num_of_pswds;
+	string s_last_changepsw;
+
 	std::ifstream fin("users.txt");
 	if (fin.is_open())
 	{
@@ -85,10 +88,15 @@ const wxString& name) : wxFrame(parent, id, title, pos, size, style, name)
 			getline(fin, s_islimit);
 			getline(fin, s_mintime);
 			getline(fin, s_maxtime);
+			getline(fin, s_num_of_pswds);
+			getline(fin, s_last_changepsw);
+
 			wxString s1(s_isblock);
 			wxString s2(s_islimit);
 			wxString s3(s_mintime);
-			wxString s4(s_mintime);
+			wxString s4(s_maxtime);
+			wxString s5(s_num_of_pswds);
+			wxString s6(s_last_changepsw);
 
 			// Вектор уже использованных паролей
 			vector<wxString> vec;
@@ -104,7 +112,7 @@ const wxString& name) : wxFrame(parent, id, title, pos, size, style, name)
 				}
 			}
 
-			User user = User(s_name, s_psw, wxAtoi(s1), wxAtoi(s2), wxAtoi(s3), wxAtoi(s4), vec);
+			User user = User(s_name, s_psw, wxAtoi(s1), wxAtoi(s2), wxAtoi(s3), wxAtoi(s4), vec, wxAtoi(s5), wxAtoi(s6));
 			start_users.push_back(user);
 		}
 		fin.close();
@@ -118,18 +126,22 @@ const wxString& name) : wxFrame(parent, id, title, pos, size, style, name)
 		fout << "0\n";
 		fout << "0\n";
 		fout << "0\n";
+		fout << "0\n";
+		fout << "1\n";
 		fout << "0";
 
-		User user = User("ADMIN", "", 0, 0, 0, 0, {});
+		User user = User("ADMIN", "", 0, 0, 0, 0, {}, 1, 0);
 		start_users.push_back(user);
 		fout.close();
 	}
 
 	// Файл айдита
-	std::ifstream fin_aud("audit.txt");
+	std::ifstream fin_aud("audit.eaud");
+	//std::ifstream fin_aud("audit.txt");
 	if (!fin_aud.is_open())
 	{
-		std::ofstream fout("audit.txt");
+		std::ofstream fout("audit.eaud");
+		//std::ofstream fout("audit.txt");
 		fout << "Файл аудита:\n";
 		fout.close();
 	}
@@ -150,6 +162,8 @@ MainFrame::~MainFrame() {
 		fout << start_users[i].is_limit << "\n";
 		fout << start_users[i].min_pswtime << "\n";
 		fout << start_users[i].max_pswtime << "\n";
+		fout << start_users[i].num_of_pswds << "\n";
+		fout << start_users[i].last_changepsw << "\n";
 	}
 
 	fout << start_users[start_users.size() - 1].name << "\n";
@@ -162,7 +176,9 @@ MainFrame::~MainFrame() {
 	fout << start_users[start_users.size() - 1].is_block << "\n";
 	fout << start_users[start_users.size() - 1].is_limit << "\n";
 	fout << start_users[start_users.size() - 1].min_pswtime << "\n";
-	fout << start_users[start_users.size() - 1].max_pswtime;
+	fout << start_users[start_users.size() - 1].max_pswtime << "\n";
+	fout << start_users[start_users.size() - 1].num_of_pswds << "\n";
+	fout << start_users[start_users.size() - 1].last_changepsw;
 
 	fout.close();
 }
@@ -180,7 +196,8 @@ void MainFrame::OnMenuAbout(wxMenuEvent& event) {
 }
 
 void MainFrame::EnterToSystem(bool isSucces, wxString login) {
-	std::ofstream fin_aud("audit.txt", std::ios_base::app);
+	std::ofstream fin_aud("audit.eaud", std::ios_base::app);
+	//std::ofstream fin_aud("audit.txt", std::ios_base::app);
 	time_t now = time(0);
 	char* dt = ctime(&now);
 	if (isSucces) {
@@ -284,31 +301,74 @@ void MainFrame::OnOkClick(wxCommandEvent& event) {
 								first_enter->ShowModal();
 							}
 							else {
+								if (it->max_pswtime == 0) {
+									user_frame = new UserFrame(NULL, wxID_ANY, wxT("Раздел пользователя"));
+									user_frame->user_users = start_users;
+									user_frame->hello->SetLabel(wxString::Format(wxT("Hello, %s!"), it->name));
+									user_frame->UserName = it->name;
+
+									EnterToSystem(true, it->name);
+									Destroy();
+									user_frame->Show(true);
+								}
+								else {
+									if (time(0) - it->last_changepsw > it->max_pswtime) {
+										wxMessageBox(wxT("Прошло слишком много времени с момента последей смены пароля,\nпожалуйста, смените пароль."), wxT("Ошибка при входе"));
+									
+										ChangeUsPswDlg* change_dlg = new ChangeUsPswDlg(this);
+										change_dlg->user_vec = start_users;
+										change_dlg->from_maxtime = true;
+										change_dlg->changepsw_name = it->name;
+										change_dlg->ShowModal();
+									}
+									else {
+										user_frame = new UserFrame(NULL, wxID_ANY, wxT("Раздел пользователя"));
+										user_frame->user_users = start_users;
+										user_frame->hello->SetLabel(wxString::Format(wxT("Hello, %s!"), it->name));
+										user_frame->UserName = it->name;
+
+										EnterToSystem(true, it->name);
+										Destroy();
+										user_frame->Show(true);
+									}									
+								}								
+							}
+						}
+						else {
+							if (it->max_pswtime == 0) {
 								user_frame = new UserFrame(NULL, wxID_ANY, wxT("Раздел пользователя"));
 								user_frame->user_users = start_users;
 								user_frame->hello->SetLabel(wxString::Format(wxT("Hello, %s!"), it->name));
 								user_frame->UserName = it->name;
 
 								EnterToSystem(true, it->name);
-
 								Destroy();
 								user_frame->Show(true);
 							}
-						}
-						else {
-							user_frame = new UserFrame(NULL, wxID_ANY, wxT("Раздел пользователя"));
-							user_frame->user_users = start_users;
-							user_frame->hello->SetLabel(wxString::Format(wxT("Hello, %s!"), it->name));
-							user_frame->UserName = it->name;
+							else {
+								if (time(0) - it->last_changepsw > it->max_pswtime) {
+									wxMessageBox(wxT("Прошло слишком много времени с момента последей смены пароля,\nпожалуйста, смените пароль."), wxT("Ошибка при входе"));
 
-							EnterToSystem(true, it->name);
+									ChangeUsPswDlg* change_dlg = new ChangeUsPswDlg(this);
+									change_dlg->user_vec = start_users;
+									change_dlg->from_maxtime = true;
+									change_dlg->changepsw_name = it->name;
+									change_dlg->ShowModal();
+								}
+								else {
+									user_frame = new UserFrame(NULL, wxID_ANY, wxT("Раздел пользователя"));
+									user_frame->user_users = start_users;
+									user_frame->hello->SetLabel(wxString::Format(wxT("Hello, %s!"), it->name));
+									user_frame->UserName = it->name;
 
-							Destroy();
-							user_frame->Show(true);
+									EnterToSystem(true, it->name);
+									Destroy();
+									user_frame->Show(true);
+								}
+							}						
 						}
 					}
 					else {
-						// Нужно ли учитывать такие попытки входа в аудите???
 						wxMessageBox(wxT("Ваш аккаунт заблокирован, обратитесь к администратору"));		
 						Destroy();
 					}

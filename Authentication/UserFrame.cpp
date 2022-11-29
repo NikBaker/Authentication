@@ -41,11 +41,15 @@ UserFrame::UserFrame(wxWindow* parent,
 
 void UserFrame::OnChangePsw(wxMenuEvent& event) {
 	change_dlg = new ChangeUsPswDlg(this);
+	change_dlg->user_vec = user_users;
+	change_dlg->from_maxtime = false;
+	change_dlg->changepsw_name = UserName;
 	change_dlg->ShowModal();
 }
 
 void UserFrame::ExitFromSystem(wxString login) {
-	std::ofstream fin_aud("audit.txt", std::ios_base::app);
+	std::ofstream fin_aud("audit.eaud", std::ios_base::app);
+	//std::ofstream fin_aud("audit.txt", std::ios_base::app);
 	time_t now = time(0);
 	char* dt = ctime(&now);
 
@@ -88,7 +92,8 @@ UserFrame::~UserFrame() {
 		fout << user_users[i].is_limit << "\n";
 		fout << user_users[i].min_pswtime << "\n";
 		fout << user_users[i].max_pswtime << "\n";
-
+		fout << user_users[i].num_of_pswds << "\n";
+		fout << user_users[i].last_changepsw << "\n";
 	}
 
 	fout << user_users[user_users.size() - 1].name << "\n";
@@ -101,7 +106,9 @@ UserFrame::~UserFrame() {
 	fout << user_users[user_users.size() - 1].is_block << "\n";
 	fout << user_users[user_users.size() - 1].is_limit << "\n";
 	fout << user_users[user_users.size() - 1].min_pswtime << "\n";
-	fout << user_users[user_users.size() - 1].max_pswtime;
+	fout << user_users[user_users.size() - 1].max_pswtime << "\n";
+	fout << user_users[user_users.size() - 1].num_of_pswds << "\n";
+	fout << user_users[user_users.size() - 1].last_changepsw;
 
 	fout.close();
 }
@@ -141,6 +148,23 @@ ChangeUsPswDlg::ChangeUsPswDlg(wxWindow* parent) : wxDialog(parent, wxID_ANY, wx
 	Centre();
 
 	Connect(ID_CHANGE_US_PSW, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(ChangeUsPswDlg::OnOkBtn));
+
+
+	////////////////////////////////////////////////////
+	/*UserFrame* p_wnd1 = (UserFrame*)GetParent();
+	if (p_wnd1 != nullptr) {
+		user_vec = p_wnd1->user_users;
+		from_maxtime = false;
+		changepsw_name = p_wnd1->UserName;
+	}*/
+	/*MainFrame* p_wnd2 = (MainFrame*)GetParent();
+	if (p_wnd2 != nullptr) {
+		user_vec = p_wnd2->start_users;
+		from_maxtime = true;
+		changepsw_name = p_wnd2->name;
+	}*/
+	////////////////////////////////////////////////////
+
 }
 
 void ChangeUsPswDlg::OnOkBtn(wxCommandEvent& event) {
@@ -150,9 +174,11 @@ void ChangeUsPswDlg::OnOkBtn(wxCommandEvent& event) {
 	}
 	else {
 		wxString oldStr = GetOldPsw();
-		UserFrame* p_wnd = (UserFrame*)GetParent();
-		auto it = find_if(p_wnd->user_users.begin(), p_wnd->user_users.end(), [p_wnd](User& u) { return u.name == p_wnd->UserName; });
-		if (it != p_wnd->user_users.end()) {
+		//UserFrame* p_wnd = (UserFrame*)GetParent();
+		//auto it = find_if(p_wnd->user_users.begin(), p_wnd->user_users.end(), [p_wnd](User& u) { return u.name == p_wnd->UserName; });
+		//if (it != p_wnd->user_users.end()) {
+		auto it = find_if(user_vec.begin(), user_vec.end(), [this](User& u) { return u.name == changepsw_name; });
+		if (it != user_vec.end()) {
 			if (it->psw != oldStr) {
 				wxMessageBox(wxT("Неправильно введен старый пароль"), wxT("Ошибка при вводе пароля"));
 			}
@@ -173,16 +199,56 @@ void ChangeUsPswDlg::OnOkBtn(wxCommandEvent& event) {
 								wxMessageBox(wxT("Вы уже использовали такой пароль,\nпопробуйте другой"));
 							}
 							else {
-								if (it->pswds_list.size() == 10) {		// 10 - максимальное значение, которое устанавливается админом
-									it->pswds_list.erase(it->pswds_list.begin());
-									it->pswds_list.push_back(this->GetNewPsw());
+								if (it->min_pswtime == 0) {
+									if (it->pswds_list.size() == it->num_of_pswds) {		// it->num_of_pswds - максимальное значение, которое устанавливается админом
+										it->pswds_list.erase(it->pswds_list.begin());
+										it->pswds_list.push_back(this->GetNewPsw());
+									}
+									else {
+										it->pswds_list.push_back(this->GetNewPsw());
+									}
+
+									it->psw = this->GetNewPsw();
+									wxMessageBox(wxT("Вы успешно изменили пароль"));
+									it->last_changepsw = time(0);
+
+									if (from_maxtime) {
+										MainFrame* p_wnd = (MainFrame*)GetParent();
+										p_wnd->start_users = user_vec;
+									}
+									else {
+										UserFrame* p_wnd = (UserFrame*)GetParent();
+										p_wnd->user_users = user_vec;
+									}
 								}
 								else {
-									it->pswds_list.push_back(this->GetNewPsw());
-								}
+									if (time(0) - it->last_changepsw < it->min_pswtime) {
+										wxMessageBox(wxT("Ещё не прошло достаточно времени с момента прошлой смены пароля,\nпопробуйте позднее"), wxT("Ошибка при вводе пароля"));
+									}
+									else {
+										if (it->pswds_list.size() == it->num_of_pswds) {		// it->num_of_pswds - максимальное значение, которое устанавливается админом
+											it->pswds_list.erase(it->pswds_list.begin());
+											it->pswds_list.push_back(this->GetNewPsw());
+										}
+										else {
+											it->pswds_list.push_back(this->GetNewPsw());
+										}
 
-								it->psw = this->GetNewPsw();
-								wxMessageBox(wxT("Вы успешно изменили пароль"));
+										it->psw = this->GetNewPsw();
+										wxMessageBox(wxT("Вы успешно изменили пароль"));
+										it->last_changepsw = time(0);
+
+										if (from_maxtime) {
+											MainFrame* p_wnd = (MainFrame*)GetParent();
+											p_wnd->start_users = user_vec;
+										}
+										else {
+											UserFrame* p_wnd = (UserFrame*)GetParent();
+											p_wnd->user_users = user_vec;
+										}
+									}
+								}
+								
 								Destroy();
 							}
 
@@ -199,19 +265,60 @@ void ChangeUsPswDlg::OnOkBtn(wxCommandEvent& event) {
 							//wxMessageBox(wxT("Пришло время сменить пароль,\nВы будете перенаправлены на страницу смены пароля"));	//
 						}
 						else {
-							if (it->pswds_list.size() == 10) {		// 10 - максимальное значение, которое устанавливается админом
-								it->pswds_list.erase(it->pswds_list.begin());
-								it->pswds_list.push_back(this->GetNewPsw());
+							if (it->min_pswtime == 0) {
+								if (it->pswds_list.size() == it->num_of_pswds) {		// it->num_of_pswds - максимальное значение, которое устанавливается админом
+									it->pswds_list.erase(it->pswds_list.begin());
+									it->pswds_list.push_back(this->GetNewPsw());
+								}
+								else {
+									it->pswds_list.push_back(this->GetNewPsw());
+								}
+
+								it->psw = this->GetNewPsw();
+								wxMessageBox(wxT("Вы успешно изменили пароль"));
+								it->last_changepsw = time(0);
+
+								if (from_maxtime) {
+									MainFrame* p_wnd = (MainFrame*)GetParent();
+									p_wnd->start_users = user_vec;
+									int temp = 0;				///
+								}
+								else {
+									UserFrame* p_wnd = (UserFrame*)GetParent();
+									p_wnd->user_users = user_vec;
+								}
 							}
 							else {
-								it->pswds_list.push_back(this->GetNewPsw());
-							}
+								if (time(0) - it->last_changepsw < it->min_pswtime) {
+									wxMessageBox(wxT("Ещё не прошло достаточно времени с момента прошлой смены пароля,\nпопробуйте позднее"), wxT("Ошибка при вводе пароля"));
+								}
+								else {
+									if (it->pswds_list.size() == it->num_of_pswds) {		// it->num_of_pswds - максимальное значение, которое устанавливается админом
+										it->pswds_list.erase(it->pswds_list.begin());
+										it->pswds_list.push_back(this->GetNewPsw());
+									}
+									else {
+										it->pswds_list.push_back(this->GetNewPsw());
+									}
 
-							it->psw = this->GetNewPsw();
-							wxMessageBox(wxT("Вы успешно изменили пароль"));
+									it->psw = this->GetNewPsw();
+									wxMessageBox(wxT("Вы успешно изменили пароль"));
+									it->last_changepsw = time(0);
+
+									if (from_maxtime) {
+										MainFrame* p_wnd = (MainFrame*)GetParent();
+										p_wnd->start_users = user_vec;
+										
+									}
+									else {
+										UserFrame* p_wnd = (UserFrame*)GetParent();
+										p_wnd->user_users = user_vec;
+									}
+								}
+							}
+							
 							Destroy();
 						}
-
 					}
 				}
 			}

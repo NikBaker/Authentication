@@ -63,12 +63,15 @@ public:
 
 	void OnChange_block(wxCommandEvent& event);
 	void OnChange_limit(wxCommandEvent& event);
+	void OnChange_spin(wxCommandEvent& event);
 
 
 private:
 	wxListBox* list;	// Листбокс для отображения имен пользователей
 	wxCheckBox* block;	
 	wxCheckBox* limit;
+	wxSpinCtrl* spin;
+	wxButton* spin_btn;
 	ChangePswDlg* change_dlg;
 	AuditOperationsDlg* auditop_dlg;
 	AuditDlg* audit_dlg;
@@ -134,10 +137,12 @@ public:
 class AuditOperationsDlg : public wxDialog
 {
 public:
-	AuditOperationsDlg(wxWindow* parent, wxString f_name, bool isEnterAaudit = false);
+	AuditOperationsDlg(wxWindow* parent, wxString f_name, string file_name, bool isEnterAaudit = false);
 
 	virtual void OnSortCol(wxGridEvent& event);
 	virtual void OnQuery(wxCommandEvent& event);
+
+	void OnSaveFile(wxCommandEvent& event);
 
 protected:
 	wxGrid* grid;
@@ -148,6 +153,10 @@ protected:
 	wxTextCtrl* tc_datetime_start;
 	wxTextCtrl* tc_datetime_end;
 	wxButton* btn_query;
+
+	wxButton* save_file;
+
+	wxString _file_name;
 };
 
 // Класс диалога добавления нового пользователя админом
@@ -169,6 +178,6 @@ public:
 	SetMinMaxDlg();
 
 public:
-	wxTextCtrl* min;
-	wxTextCtrl* max;
+	wxSpinCtrl* min;
+	wxSpinCtrl* max;
 };

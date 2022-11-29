@@ -47,9 +47,15 @@ AdminFrame::AdminFrame(wxWindow* parent,
 	v_box->Add(save, 0, wxEXPAND | wxBOTTOM, 15);
 	//
 	wxStaticText* length_psws = new wxStaticText(pnl, wxID_ANY, wxT("Длина списка использованных паролей:"));
-	wxSpinCtrl* spin = new wxSpinCtrl(pnl, wxID_ANY);
+	spin = new wxSpinCtrl(pnl, wxID_ANY);
+	spin->SetValue(1);
+	spin->SetRange(1, 1000);
+	wxBoxSizer* helph_box = new wxBoxSizer(wxHORIZONTAL);
+	helph_box->Add(spin, 0, wxALL, 5);
+	spin_btn = new wxButton(pnl, wxID_ANY, wxT("Установить"));
+	helph_box->Add(spin_btn, 0, wxALL, 5);
 	v_box->Add(length_psws, 0, /*wxEXPAND | */wxBOTTOM, 5);
-	v_box->Add(spin, 0, /*wxEXPAND | */wxBOTTOM, 15);
+	v_box->Add(helph_box, 0, /*wxEXPAND | */wxBOTTOM, 15);
 	//
 	h_box->Add(v_box, 1, wxEXPAND | wxRIGHT | wxLEFT, 15);
 
@@ -70,6 +76,7 @@ AdminFrame::AdminFrame(wxWindow* parent,
 	//Connect(wxID_SAVE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AdminFrame::OnSave));	// Пока отключим, будем менять значения разу после изменения checkbox
 	Connect(block->GetId(), wxEVT_CHECKBOX, wxCommandEventHandler(AdminFrame::OnChange_block));
 	Connect(limit->GetId(), wxEVT_CHECKBOX, wxCommandEventHandler(AdminFrame::OnChange_limit));
+	Connect(spin_btn->GetId(), wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AdminFrame::OnChange_spin));
 	Connect(ID_MINMAX, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AdminFrame::OnMinMax));
 	Connect(wxEVT_COMMAND_LISTBOX_SELECTED, wxCommandEventHandler(AdminFrame::OnSelect));
 	Connect(list->GetId(), wxEVT_LISTBOX_DCLICK, wxCommandEventHandler(AdminFrame::OnDClick));
@@ -81,6 +88,8 @@ AdminFrame::AdminFrame(wxWindow* parent,
 	string s_islimit;
 	string s_mintime;
 	string s_maxtime;
+	string s_num_of_pswds;
+	string s_last_changepsw;
 
 	std::ifstream fin("users.txt");
 	if (fin.is_open())
@@ -93,11 +102,15 @@ AdminFrame::AdminFrame(wxWindow* parent,
 			getline(fin, s_islimit);
 			getline(fin, s_mintime);
 			getline(fin, s_maxtime);
+			getline(fin, s_num_of_pswds);
+			getline(fin, s_last_changepsw);
 
 			wxString s1(s_isblock);
 			wxString s2(s_islimit);
 			wxString s3(s_mintime);
 			wxString s4(s_maxtime);
+			wxString s5(s_num_of_pswds);
+			wxString s6(s_last_changepsw);
 
 			vector<wxString> vec;
 
@@ -113,7 +126,7 @@ AdminFrame::AdminFrame(wxWindow* parent,
 			}
 
 			// Проверить, что в файле присутствовали все нужные поля ???
-			User user = User(s_name, s_psw, wxAtoi(s1), wxAtoi(s2), wxAtoi(s3), wxAtoi(s4), vec);
+			User user = User(s_name, s_psw, wxAtoi(s1), wxAtoi(s2), wxAtoi(s3), wxAtoi(s4), vec, wxAtoi(s5), wxAtoi(s6));
 			users.push_back(user);
 		}
 		fin.close();
@@ -124,10 +137,12 @@ AdminFrame::AdminFrame(wxWindow* parent,
 	}
 
 	// Файл для аудита изменений в файле учетных записей
-	std::ifstream fin_aud("changes_audit.txt");
+	std::ifstream fin_aud("changes_audit.caud");
+	//std::ifstream fin_aud("changes_audit.txt");
 	if (!fin_aud.is_open())
 	{
-		std::ofstream fout("changes_audit.txt");
+		std::ofstream fout("changes_audit.caud");
+		//std::ofstream fout("changes_audit.txt");
 		fout << "Файл аудита изменений в файле учетных записей:\n";
 		fout.close();
 
@@ -155,24 +170,52 @@ void AdminFrame::OnChangePsw(wxMenuEvent& event) {
 }
 
 void AdminFrame::OnAuditOperations(wxMenuEvent& event) {
-	auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит изменений в файле учетных записей"));
-	auditop_dlg->ShowModal();
+
+	wxFileDialog openFileDialog(this, _("Открытие файла аудита "), "", "", "Audit files (*.caud)|*.caud", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+	if (openFileDialog.ShowModal() == wxID_CANCEL) {
+		return;
+	}
+	else {
+		wxString audit_path = openFileDialog.GetPath();
+		//wxMessageBox(audit_path);
+
+		auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит изменений в файле учетных записей"), audit_path.ToStdString(), true);
+		auditop_dlg->ShowModal();
+	}
+
+	/*auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит изменений в файле учетных записей"), "changes_audit.txt");
+	auditop_dlg->ShowModal();*/
 }
 
 void AdminFrame::OnAudit(wxMenuEvent& event) {
-	auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит удачных и неудачных попыток входа"), true);
-	auditop_dlg->ShowModal();
+
+	wxFileDialog openFileDialog(this, _("Открытие файла аудита "), "", "","Audit files (*.eaud)|*.eaud", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+	if (openFileDialog.ShowModal() == wxID_CANCEL) {
+		return;
+	}
+	else {
+		wxString audit_path = openFileDialog.GetPath();
+		//wxMessageBox(audit_path);
+
+		auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит удачных и неудачных попыток входа"), audit_path.ToStdString(), true);
+		auditop_dlg->ShowModal();
+	}
+
+	/*auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит удачных и неудачных попыток входа"), "audit.txt", true);
+	auditop_dlg->ShowModal();*/
 }
 
 void AdminFrame::CnangeUserData(wxString operation, wxString username) {
-	std::ofstream fin_aud("changes_audit.txt", std::ios_base::app);
+	std::ofstream fin_aud("changes_audit.caud", std::ios_base::app);
+	//std::ofstream fin_aud("changes_audit.txt", std::ios_base::app);
 	time_t now = time(0);
 	char* dt = ctime(&now);
 	fin_aud << operation << "\n" << username << "\n" << dt;
 }
 
 void AdminFrame::ExitFromSystem(wxString login) {
-	std::ofstream fin_aud("audit.txt", std::ios_base::app);
+	std::ofstream fin_aud("audit.eaud", std::ios_base::app);
+	//std::ofstream fin_aud("audit.txt", std::ios_base::app);
 	time_t now = time(0);
 	char* dt = ctime(&now);
 
@@ -201,7 +244,7 @@ void AdminFrame::OnAddNew(wxCommandEvent& event) {
 			wxMessageBox(wxT("Пользователь с таким именем уже существует в системе!"));
 		}
 		else {	// Если такого пользователя еще нет, то добавляем данные по новому пользователю в вектор и ListBox
-			User u(addnew_dlg->new_username->GetValue(), wxT(""), addnew_dlg->block->GetValue(), addnew_dlg->limit->GetValue(), 0, 0, {});	// !!! вместо двух предпоследних параметров установливается мин и макс время, если есть
+			User u(addnew_dlg->new_username->GetValue(), wxT(""), addnew_dlg->block->GetValue(), addnew_dlg->limit->GetValue(), users[0].min_pswtime, users[0].max_pswtime, {}, users[0].num_of_pswds, 0);
 			users.push_back(u);
 
 			CnangeUserData(wxT("Добавление нового пользователя"), addnew_dlg->new_username->GetValue());
@@ -280,29 +323,44 @@ void AdminFrame::OnChange_limit(wxCommandEvent& event) {
 void AdminFrame::OnMinMax(wxCommandEvent& event) {
 	setminmax_dlg = new SetMinMaxDlg();
 	if (setminmax_dlg->ShowModal() == wxID_OK) {
-		int min = wxAtoi(setminmax_dlg->min->GetValue());
-		int max = wxAtoi(setminmax_dlg->max->GetValue());
-		if (!min) {
-			min = 0;
+		int min = setminmax_dlg->min->GetValue();
+		int max = setminmax_dlg->max->GetValue();
+		
+		if (min > max) {
+			wxMessageBox(wxT("Минимальное время не может быть больше, чем максимальное"), wxT("Ошибка при вводе"));
 		}
-		for (int i = 0; i < users.size(); ++i) {
-			users[i].min_pswtime = min;
-		}
+		else {
+			for (int i = 0; i < users.size(); ++i) {
+				users[i].min_pswtime = min;
+			}
 
-		if (!max) {
-			max = 0;
+			for (int i = 0; i < users.size(); ++i) {
+				users[i].max_pswtime = max;
+			}
 		}
-		for (int i = 0; i < users.size(); ++i) {
-			users[i].max_pswtime = max;
-		}
-
-		//setminmax_dlg->Destroy();
 	}
 	setminmax_dlg->Destroy();
 	/*else {
 		setminmax_dlg->Destroy();
 	}*/
 }
+
+// Когда меняем максимальную длину использованных паролей
+void AdminFrame::OnChange_spin(wxCommandEvent& event) {
+	int num = spin->GetValue();
+	if (num > 0) {
+		for (int i = 0; i < users.size(); ++i) {
+			users[i].num_of_pswds = spin->GetValue();
+			// Если размер меньше, чем было паролей, то обрезаем список паролей
+			if (users[i].pswds_list.size() > num) {
+				while (users[i].pswds_list.size() != num) {
+					users[i].pswds_list.erase(users[i].pswds_list.begin());
+				}
+			}
+		}
+	}
+}
+//
 
 void AdminFrame::OnSelect(wxCommandEvent& event) {
 	// Когда выбираем пользователя в списке становяться доступны чекбоксы
@@ -355,6 +413,8 @@ AdminFrame::~AdminFrame() {		// При уничтожении перезапис
 		fout << users[i].is_limit << "\n";
 		fout << users[i].min_pswtime << "\n";
 		fout << users[i].max_pswtime << "\n";
+		fout << users[i].num_of_pswds << "\n";
+		fout << users[i].last_changepsw << "\n";
 	}
 
 	fout << users[users.size() - 1].name << "\n";
@@ -367,7 +427,9 @@ AdminFrame::~AdminFrame() {		// При уничтожении перезапис
 	fout << users[users.size() - 1].is_block << "\n";
 	fout << users[users.size() - 1].is_limit << "\n";
 	fout << users[users.size() - 1].min_pswtime << "\n";
-	fout << users[users.size() - 1].max_pswtime;
+	fout << users[users.size() - 1].max_pswtime << "\n";
+	fout << users[users.size() - 1].num_of_pswds << "\n";
+	fout << users[users.size() - 1].last_changepsw;
 
 	fout.close();
 }
@@ -436,8 +498,10 @@ void ChangePswDlg::OnOkBtn(wxCommandEvent& event) {
 	}
 }
 
-AuditOperationsDlg::AuditOperationsDlg(wxWindow* parent, wxString f_name, bool isEnterAaudit) : wxDialog(parent, wxID_ANY, f_name, wxPoint(-1, -1), wxSize(1200, 500))
+AuditOperationsDlg::AuditOperationsDlg(wxWindow* parent, wxString f_name, string file_name, bool isEnterAaudit) : wxDialog(parent, wxID_ANY, f_name, wxPoint(-1, -1), wxSize(1200, 500))
 {
+	_file_name = file_name;
+
 	wxPanel* pnl = new wxPanel(this, -1);
 
 	wxBoxSizer* around_box = new wxBoxSizer(wxVERTICAL);
@@ -477,14 +541,16 @@ AuditOperationsDlg::AuditOperationsDlg(wxWindow* parent, wxString f_name, bool i
 
 	int count = -1;
 
-	std::ifstream fin;
+	std::ifstream fin(file_name);
 
-	if (isEnterAaudit) {
+	//std::ifstream fin;
+
+	/*if (isEnterAaudit) {
 		fin.open("audit.txt");
 	}
 	else {
 		fin.open("changes_audit.txt");
-	}
+	}*/
 
 	if (fin.is_open())
 	{
@@ -552,14 +618,53 @@ AuditOperationsDlg::AuditOperationsDlg(wxWindow* parent, wxString f_name, bool i
 	Connect(btn_query->GetId(), wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AuditOperationsDlg::OnQuery));
 
 	v_box->Add(grid, 1, wxEXPAND | wxBOTTOM, 10);
-	wxButton* btn_ok = new wxButton(pnl, wxID_OK);
-	btn_box->Add(btn_ok, 0, wxRight, 5);
+	wxButton* btn_ok = new wxButton(pnl, wxID_OK, wxT("Выход"));
+	save_file = new wxButton(pnl, wxID_SAVE, wxT("Сохранить как"));
+	btn_box->Add(save_file, 0, wxRight | wxLEFT, 5);
+	btn_box->Add(btn_ok, 0, wxRight | wxLEFT, 5);
+	
 	v_box->Add(btn_box, 0, wxALIGN_RIGHT);
 	around_box->Add(v_box, 1, wxEXPAND | wxALL, 7);
 
 	pnl->SetSizer(around_box);
 
+	Connect(wxID_SAVE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AuditOperationsDlg::OnSaveFile));
+
 	Centre();
+}
+
+bool IsEnterAuditEx(wxString f_name) {
+	wxString rev_ex;
+	int i = f_name.size() - 1;
+	char c = f_name[i];
+	while (c != '.') {
+		rev_ex.append(c);
+		i--;
+		c = f_name[i];
+	}
+
+	return rev_ex == wxT("duae");
+}
+
+void AuditOperationsDlg::OnSaveFile(wxCommandEvent& event) {
+	if (IsEnterAuditEx(_file_name)) {
+		wxFileDialog saveFileDialog(this, _("Сохранение файла аудита"), "", "", "Audit files (*.eaud)|*.eaud", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+		if (saveFileDialog.ShowModal() == wxID_CANCEL) {
+			return;
+		}
+		else {
+
+		}
+	}
+	else {
+		wxFileDialog saveFileDialog(this, _("Сохранение файла аудита"), "", "", "Audit files (*.caud)|*.caud", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+		if (saveFileDialog.ShowModal() == wxID_CANCEL) {
+			return;
+		}
+		else {
+
+		}
+	}
 }
 
 void AuditOperationsDlg::OnSortCol(wxGridEvent& event) {
@@ -622,7 +727,6 @@ bool cmp_time(const wxString& time1, const wxString& time2, const char& cmp_op, 
 }
 
 void AuditOperationsDlg::OnQuery(wxCommandEvent& event) {
-
 	vector<Audit> res;
 
 	wxString s_op = tc_operation->GetValue();
@@ -650,28 +754,17 @@ void AuditOperationsDlg::OnQuery(wxCommandEvent& event) {
 	}
 	
 	auto it = find_if(audits.begin(), audits.end(), [s_op, s_name, s_dtstart, s_dtend](Audit& a) {
-		///////////////////////////////////////
 		
 		return ((s_op.IsEmpty() || a.adminOperation == s_op) && (s_name.IsEmpty() || a.userName == s_name) &&
 				(s_dtstart.IsEmpty() && s_dtend.IsEmpty() 
 					|| s_dtstart.IsEmpty() && !s_dtend.IsEmpty() && cmp_time(a.dateTime, s_dtend, '<')
 					|| !s_dtstart.IsEmpty() && s_dtend.IsEmpty() && cmp_time(a.dateTime, s_dtstart, '>')
 					|| !s_dtstart.IsEmpty() && !s_dtend.IsEmpty() && cmp_time(a.dateTime, s_dtstart, ' ', s_dtend)
-				));
-		
-		// Попробовать через Enum:
-		/*
-		enum class {true, first, second, pair}
-		sl.IsEmpty() + 2*sr.Empty() - вычисляем побитово одно из значений: 00, 01, 10, 11
-		Затем передаем получившееся значение в cmp_time()
-		*/
-		///////////////////////////////////////
-		
+				));	
 	});
 	while (it != audits.end()) {
 		res.push_back(*it);
 		it = find_if(it + 1, audits.end(), [s_op, s_name, s_dtstart, s_dtend](Audit& a) {
-			///////////////////////////////////
 
 			return ((s_op.IsEmpty() || a.adminOperation == s_op) && (s_name.IsEmpty() || a.userName == s_name) &&
 				(s_dtstart.IsEmpty() && s_dtend.IsEmpty()
@@ -679,15 +772,6 @@ void AuditOperationsDlg::OnQuery(wxCommandEvent& event) {
 					|| !s_dtstart.IsEmpty() && s_dtend.IsEmpty() && cmp_time(a.dateTime, s_dtstart, '>')
 					|| !s_dtstart.IsEmpty() && !s_dtend.IsEmpty() && cmp_time(a.dateTime, s_dtstart, ' ', s_dtend)
 					));
-
-			// Попробовать через Enum:
-			/*
-			enum class {true, first, second, pair}
-			sl.IsEmpty() + 2*sr.Empty() - вычисляем побитово одно из значений: 00, 01, 10, 11
-			Затем передаем получившееся значение в cmp_time()
-			*/
-
-			////////////////////////////////////
 		});
 	}
 
@@ -812,6 +896,7 @@ void FirstEnterDlg::OnOkBtn(wxCommandEvent& event) {
 						//wxMessageBox(wxT("Matched"));
 						it->psw = this->GetFirstPsw();
 						it->pswds_list.push_back(this->GetFirstPsw());
+						it->last_changepsw = time(0);
 						wxMessageBox(wxT("Вы успешно установили пароль"));
 						Destroy();
 					}
@@ -823,6 +908,7 @@ void FirstEnterDlg::OnOkBtn(wxCommandEvent& event) {
 				else {
 					it->psw = this->GetFirstPsw();
 					it->pswds_list.push_back(this->GetFirstPsw());
+					it->last_changepsw = time(0);
 					wxMessageBox(wxT("Вы успешно установили пароль"));
 					Destroy();
 				}
@@ -843,10 +929,14 @@ SetMinMaxDlg::SetMinMaxDlg() : wxDialog(NULL, wxID_ANY, wxT("Установка 
 	wxStaticText* t_max = new wxStaticText(pnl, wxID_ANY, wxT("Максимум (дней)"));
 
 	h_box1->Add(t_min, 0, wxEXPAND | wxRIGHT, 5);
-	min = new wxTextCtrl(pnl, wxID_ANY);
+	min = new wxSpinCtrl(pnl, wxID_ANY);
+	min->SetRange(0, 1000);
+	min->SetValue(0);
 	h_box1->Add(min, 1, wxEXPAND | wxRIGHT, 5);
 	h_box1->Add(t_max, 0, wxEXPAND | wxRIGHT, 5);
-	max = new wxTextCtrl(pnl, wxID_ANY);
+	max = new wxSpinCtrl(pnl, wxID_ANY);
+	max->SetRange(0, 1000);
+	max->SetValue(0);
 	h_box1->Add(max, 1, wxEXPAND);
 
 	v_box->Add(h_box1, 0, wxEXPAND | wxBOTTOM, 5);

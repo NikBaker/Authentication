@@ -62,4 +62,9 @@ private:
 	wxTextCtrl* old_psw;
 	wxTextCtrl* new_psw;
 	wxTextCtrl* confirm_psw;
+
+public:
+	vector<User> user_vec;
+	bool from_maxtime;
+	wxString changepsw_name;
 };

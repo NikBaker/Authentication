@@ -18,6 +18,7 @@ using std::string;
 class UserFrame;
 class AdminFrame;
 class FirstEnterDlg;
+class ChangeUsPswDlg;
 
 /*
 Класс стартового окна
@@ -52,6 +53,7 @@ private:
 	UserFrame* user_frame;
 	AdminFrame* admin_frame;
 	FirstEnterDlg* first_enter;
+	ChangeUsPswDlg* change_dlg;
 
 	int num_mis;			// Количество неправильных вводов пароля
 	bool isFirstStart;		// Флаг первого входа в систему
