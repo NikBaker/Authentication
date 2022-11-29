@@ -48,8 +48,8 @@ void UserFrame::OnChangePsw(wxMenuEvent& event) {
 }
 
 void UserFrame::ExitFromSystem(wxString login) {
-	std::ofstream fin_aud("audit.eaud", std::ios_base::app);
-	//std::ofstream fin_aud("audit.txt", std::ios_base::app);
+	std::ofstream fin_aud(user_audfile_1, std::ios_base::app);
+	//std::ofstream fin_aud("audit.eaud", std::ios_base::app);
 	time_t now = time(0);
 	char* dt = ctime(&now);
 
@@ -94,6 +94,10 @@ UserFrame::~UserFrame() {
 		fout << user_users[i].max_pswtime << "\n";
 		fout << user_users[i].num_of_pswds << "\n";
 		fout << user_users[i].last_changepsw << "\n";
+		fout << user_users[i].filename_1 << "\n";
+		fout << user_users[i].filename_2 << "\n";
+		fout << user_users[i].num_of_audit_records << "\n";
+
 	}
 
 	fout << user_users[user_users.size() - 1].name << "\n";
@@ -108,7 +112,10 @@ UserFrame::~UserFrame() {
 	fout << user_users[user_users.size() - 1].min_pswtime << "\n";
 	fout << user_users[user_users.size() - 1].max_pswtime << "\n";
 	fout << user_users[user_users.size() - 1].num_of_pswds << "\n";
-	fout << user_users[user_users.size() - 1].last_changepsw;
+	fout << user_users[user_users.size() - 1].last_changepsw << "\n";
+	fout << user_users[user_users.size() - 1].filename_1 << "\n";
+	fout << user_users[user_users.size() - 1].filename_2 << "\n";
+	fout << user_users[user_users.size() - 1].num_of_audit_records;
 
 	fout.close();
 }
@@ -148,22 +155,6 @@ ChangeUsPswDlg::ChangeUsPswDlg(wxWindow* parent) : wxDialog(parent, wxID_ANY, wx
 	Centre();
 
 	Connect(ID_CHANGE_US_PSW, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(ChangeUsPswDlg::OnOkBtn));
-
-
-	////////////////////////////////////////////////////
-	/*UserFrame* p_wnd1 = (UserFrame*)GetParent();
-	if (p_wnd1 != nullptr) {
-		user_vec = p_wnd1->user_users;
-		from_maxtime = false;
-		changepsw_name = p_wnd1->UserName;
-	}*/
-	/*MainFrame* p_wnd2 = (MainFrame*)GetParent();
-	if (p_wnd2 != nullptr) {
-		user_vec = p_wnd2->start_users;
-		from_maxtime = true;
-		changepsw_name = p_wnd2->name;
-	}*/
-	////////////////////////////////////////////////////
 
 }
 

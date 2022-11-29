@@ -44,6 +44,11 @@ public:
 private:
 	ChangeUsPswDlg* change_dlg;
 
+public:
+	// файлы аудита
+	string user_audfile_1;
+	string user_audfile_2;
+
 };
 
 

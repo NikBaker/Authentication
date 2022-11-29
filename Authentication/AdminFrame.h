@@ -25,12 +25,16 @@ const int ID_LOGOUT = 4;
 const int ID_MINMAX = 100;
 const int ID_AUDIT_OPERATIONS = 101;
 const int ID_AUDIT = 102;
+const int ID_OK_NAMES = 103;
+const int ID_BTN2 = 104;
+const int ID_CLEAR = 105;
 
 class ChangePswDlg;
 class AddNewUserDlg;
 class SetMinMaxDlg;
 class AuditOperationsDlg;
 class AuditDlg;
+class AuditsFilesNames;
 
 // Класс окна админа
 class AdminFrame : public wxFrame
@@ -64,6 +68,7 @@ public:
 	void OnChange_block(wxCommandEvent& event);
 	void OnChange_limit(wxCommandEvent& event);
 	void OnChange_spin(wxCommandEvent& event);
+	void OnChange_auditspin(wxCommandEvent& event);
 
 
 private:
@@ -72,16 +77,46 @@ private:
 	wxCheckBox* limit;
 	wxSpinCtrl* spin;
 	wxButton* spin_btn;
+	wxSpinCtrl* spin_length_audit;
+	wxButton* spin_length_audit_btn;
 	ChangePswDlg* change_dlg;
+public:
 	AuditOperationsDlg* auditop_dlg;
+private:
 	AuditDlg* audit_dlg;
 	AddNewUserDlg* addnew_dlg;
 	SetMinMaxDlg* setminmax_dlg;
+
+	AuditsFilesNames* aud_names_dlg;
 public:
 	std::vector<User> users;		// Переписать под мапу (быстрее поиск)
 	wxString AdminName;
+
+	// файлы аудита
+	string audfile_1;
+	string audfile_2;
 };
 
+// Класс диалога первого входа Админа систему
+class FirstAdminEnterDlg : public wxDialog
+{
+public:
+	FirstAdminEnterDlg(wxWindow* parent);
+
+	void OnOkBtn(wxCommandEvent& event);
+
+	wxString GetFirstPsw() { return first_psw->GetValue(); }
+	wxString GetConfirmPsw() { return confirm_psw->GetValue(); }
+
+	wxString userNameForSearch;
+
+private:
+	wxTextCtrl* first_psw;
+	wxTextCtrl* confirm_psw;
+
+	wxTextCtrl* enter_audit;
+	wxTextCtrl* changes_audit;
+};
 
 // Класс диалога первого входа в систему
 class FirstEnterDlg : public wxDialog
@@ -119,6 +154,20 @@ private:
 	wxTextCtrl* confirm_psw;
 };
 
+// Класс диалога установки имен для файлов аудита
+class AuditsFilesNames : public wxDialog
+{
+public:
+	AuditsFilesNames(wxWindow* parent);
+
+	wxString GetEnterAuditName() { return enter_audit->GetValue(); }
+	wxString GetChangesAuditName() { return changes_audit->GetValue(); }
+
+public:
+	wxTextCtrl* enter_audit;
+	wxTextCtrl* changes_audit;
+};
+
 class Audit 
 {
 public:
@@ -143,6 +192,7 @@ public:
 	virtual void OnQuery(wxCommandEvent& event);
 
 	void OnSaveFile(wxCommandEvent& event);
+	void OnClearFile(wxCommandEvent& event);
 
 protected:
 	wxGrid* grid;
@@ -155,6 +205,7 @@ protected:
 	wxButton* btn_query;
 
 	wxButton* save_file;
+	wxButton* clear_file;
 
 	wxString _file_name;
 };

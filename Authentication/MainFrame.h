@@ -18,6 +18,7 @@ using std::string;
 class UserFrame;
 class AdminFrame;
 class FirstEnterDlg;
+class FirstAdminEnterDlg;
 class ChangeUsPswDlg;
 
 /*
@@ -53,10 +54,16 @@ private:
 	UserFrame* user_frame;
 	AdminFrame* admin_frame;
 	FirstEnterDlg* first_enter;
+	FirstAdminEnterDlg* first_adm_enter;
 	ChangeUsPswDlg* change_dlg;
 
 	int num_mis;			// Количество неправильных вводов пароля
 	bool isFirstStart;		// Флаг первого входа в систему
+
+public:
+	// файлы аудита
+	string main_audfile_1;
+	string main_audfile_2;
 };
 
 string wxString_to_lowercase(const wxString& str);

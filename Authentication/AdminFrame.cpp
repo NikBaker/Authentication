@@ -43,12 +43,12 @@ AdminFrame::AdminFrame(wxWindow* parent,
 	limit->Enable(false);
 	wxButton* set_minmax = new wxButton(pnl, ID_MINMAX, wxT("Установить\nмин, макс\nсрок действия пароля"));
 	v_box->Add(set_minmax, 0, wxEXPAND | wxBOTTOM, 15);
-	wxButton* save = new wxButton(pnl, wxID_SAVE, wxT("Сохранить"));
-	v_box->Add(save, 0, wxEXPAND | wxBOTTOM, 15);
+	/*wxButton* save = new wxButton(pnl, wxID_SAVE, wxT("Сохранить"));
+	v_box->Add(save, 0, wxEXPAND | wxBOTTOM, 15);*/
 	//
 	wxStaticText* length_psws = new wxStaticText(pnl, wxID_ANY, wxT("Длина списка использованных паролей:"));
 	spin = new wxSpinCtrl(pnl, wxID_ANY);
-	spin->SetValue(1);
+	//spin->SetValue(1);
 	spin->SetRange(1, 1000);
 	wxBoxSizer* helph_box = new wxBoxSizer(wxHORIZONTAL);
 	helph_box->Add(spin, 0, wxALL, 5);
@@ -56,6 +56,18 @@ AdminFrame::AdminFrame(wxWindow* parent,
 	helph_box->Add(spin_btn, 0, wxALL, 5);
 	v_box->Add(length_psws, 0, /*wxEXPAND | */wxBOTTOM, 5);
 	v_box->Add(helph_box, 0, /*wxEXPAND | */wxBOTTOM, 15);
+
+	wxStaticText* length_audit = new wxStaticText(pnl, wxID_ANY, wxT("Максимальное кол-во записей в файлах аудита:"));
+	spin_length_audit = new wxSpinCtrl(pnl, wxID_ANY);
+	//spin_length_audit->SetValue(1);
+	spin_length_audit->SetRange(1, 100000);
+	wxBoxSizer* helph_box2 = new wxBoxSizer(wxHORIZONTAL);
+	helph_box2->Add(spin_length_audit, 0, wxALL, 5);
+	spin_length_audit_btn = new wxButton(pnl, wxID_ANY, wxT("Установить"));
+	helph_box2->Add(spin_length_audit_btn, 0, wxALL, 5);
+	v_box->Add(length_audit, 0, /*wxEXPAND | */wxBOTTOM, 5);
+	v_box->Add(helph_box2, 0, /*wxEXPAND | */wxBOTTOM, 15);
+	
 	//
 	h_box->Add(v_box, 1, wxEXPAND | wxRIGHT | wxLEFT, 15);
 
@@ -77,6 +89,7 @@ AdminFrame::AdminFrame(wxWindow* parent,
 	Connect(block->GetId(), wxEVT_CHECKBOX, wxCommandEventHandler(AdminFrame::OnChange_block));
 	Connect(limit->GetId(), wxEVT_CHECKBOX, wxCommandEventHandler(AdminFrame::OnChange_limit));
 	Connect(spin_btn->GetId(), wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AdminFrame::OnChange_spin));
+	Connect(spin_length_audit_btn->GetId(), wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AdminFrame::OnChange_auditspin));
 	Connect(ID_MINMAX, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AdminFrame::OnMinMax));
 	Connect(wxEVT_COMMAND_LISTBOX_SELECTED, wxCommandEventHandler(AdminFrame::OnSelect));
 	Connect(list->GetId(), wxEVT_LISTBOX_DCLICK, wxCommandEventHandler(AdminFrame::OnDClick));
@@ -91,6 +104,11 @@ AdminFrame::AdminFrame(wxWindow* parent,
 	string s_num_of_pswds;
 	string s_last_changepsw;
 
+	string s_filename_1;
+	string s_filename_2;
+
+	string s_num_of_audit_records;
+
 	std::ifstream fin("users.txt");
 	if (fin.is_open())
 	{
@@ -104,6 +122,10 @@ AdminFrame::AdminFrame(wxWindow* parent,
 			getline(fin, s_maxtime);
 			getline(fin, s_num_of_pswds);
 			getline(fin, s_last_changepsw);
+			getline(fin, s_filename_1);
+			getline(fin, s_filename_2);
+			getline(fin, s_num_of_audit_records);
+
 
 			wxString s1(s_isblock);
 			wxString s2(s_islimit);
@@ -111,6 +133,7 @@ AdminFrame::AdminFrame(wxWindow* parent,
 			wxString s4(s_maxtime);
 			wxString s5(s_num_of_pswds);
 			wxString s6(s_last_changepsw);
+			wxString s7(s_num_of_audit_records);
 
 			vector<wxString> vec;
 
@@ -125,8 +148,7 @@ AdminFrame::AdminFrame(wxWindow* parent,
 				}
 			}
 
-			// Проверить, что в файле присутствовали все нужные поля ???
-			User user = User(s_name, s_psw, wxAtoi(s1), wxAtoi(s2), wxAtoi(s3), wxAtoi(s4), vec, wxAtoi(s5), wxAtoi(s6));
+			User user = User(s_name, s_psw, wxAtoi(s1), wxAtoi(s2), wxAtoi(s3), wxAtoi(s4), vec, wxAtoi(s5), wxAtoi(s6), s_filename_1, s_filename_2, wxAtoi(s7));
 			users.push_back(user);
 		}
 		fin.close();
@@ -136,26 +158,16 @@ AdminFrame::AdminFrame(wxWindow* parent,
 		list->Append(wxString(users[i].name));
 	}
 
-	// Файл для аудита изменений в файле учетных записей
-	std::ifstream fin_aud("changes_audit.caud");
-	//std::ifstream fin_aud("changes_audit.txt");
-	if (!fin_aud.is_open())
-	{
-		std::ofstream fout("changes_audit.caud");
-		//std::ofstream fout("changes_audit.txt");
-		fout << "Файл аудита изменений в файле учетных записей:\n";
-		fout.close();
-
-		fin_aud.close();	//
-	}
+	spin->SetValue(users[0].num_of_pswds);
+	spin_length_audit->SetValue(users[0].num_of_audit_records);
 }
 
-void AdminFrame::OnMenuExit(wxMenuEvent& event) {		// При закрытии разлогиниваемся?
+void AdminFrame::OnMenuExit(wxMenuEvent& event) {		
 	ExitFromSystem(AdminName);
 	Destroy();
 }
 
-void AdminFrame::OnClose(wxCommandEvent& event) {		// При закрытии разлогиниваемся?
+void AdminFrame::OnClose(wxCommandEvent& event) {		
 	ExitFromSystem(AdminName);
 	event.Skip();
 }
@@ -171,17 +183,20 @@ void AdminFrame::OnChangePsw(wxMenuEvent& event) {
 
 void AdminFrame::OnAuditOperations(wxMenuEvent& event) {
 
-	wxFileDialog openFileDialog(this, _("Открытие файла аудита "), "", "", "Audit files (*.caud)|*.caud", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-	if (openFileDialog.ShowModal() == wxID_CANCEL) {
-		return;
-	}
-	else {
-		wxString audit_path = openFileDialog.GetPath();
-		//wxMessageBox(audit_path);
+	//wxFileDialog openFileDialog(this, _("Открытие файла аудита "), "", "", "Audit files (*.caud)|*.caud", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+	//if (openFileDialog.ShowModal() == wxID_CANCEL) {
+	//	return;
+	//}
+	//else {
+	//	wxString audit_path = openFileDialog.GetPath();
+	//	//wxMessageBox(audit_path);
 
-		auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит изменений в файле учетных записей"), audit_path.ToStdString(), true);
-		auditop_dlg->ShowModal();
-	}
+	//	auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит изменений в файле учетных записей"), audit_path.ToStdString(), true);
+	//	auditop_dlg->ShowModal();
+	//}
+
+	auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит изменений в файле учетных записей"), audfile_2);
+	auditop_dlg->ShowModal();
 
 	/*auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит изменений в файле учетных записей"), "changes_audit.txt");
 	auditop_dlg->ShowModal();*/
@@ -189,33 +204,37 @@ void AdminFrame::OnAuditOperations(wxMenuEvent& event) {
 
 void AdminFrame::OnAudit(wxMenuEvent& event) {
 
-	wxFileDialog openFileDialog(this, _("Открытие файла аудита "), "", "","Audit files (*.eaud)|*.eaud", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-	if (openFileDialog.ShowModal() == wxID_CANCEL) {
-		return;
-	}
-	else {
-		wxString audit_path = openFileDialog.GetPath();
-		//wxMessageBox(audit_path);
+	//wxFileDialog openFileDialog(this, _("Открытие файла аудита "), "", "","Audit files (*.eaud)|*.eaud", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+	//if (openFileDialog.ShowModal() == wxID_CANCEL) {
+	//	return;
+	//}
+	//else {
+	//	wxString audit_path = openFileDialog.GetPath();
+	//	//wxMessageBox(audit_path);
 
-		auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит удачных и неудачных попыток входа"), audit_path.ToStdString(), true);
-		auditop_dlg->ShowModal();
-	}
+	//	auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит удачных и неудачных попыток входа"), audit_path.ToStdString(), true);
+	//	auditop_dlg->ShowModal();
+	//}
+
+	auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит удачных и неудачных попыток входа"), audfile_1, true);
+	auditop_dlg->ShowModal();
 
 	/*auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит удачных и неудачных попыток входа"), "audit.txt", true);
 	auditop_dlg->ShowModal();*/
 }
 
 void AdminFrame::CnangeUserData(wxString operation, wxString username) {
-	std::ofstream fin_aud("changes_audit.caud", std::ios_base::app);
-	//std::ofstream fin_aud("changes_audit.txt", std::ios_base::app);
+	
+	std::ofstream fin_aud(audfile_2, std::ios_base::app);
+	//std::ofstream fin_aud("changes_audit.caud", std::ios_base::app);
 	time_t now = time(0);
 	char* dt = ctime(&now);
 	fin_aud << operation << "\n" << username << "\n" << dt;
 }
 
 void AdminFrame::ExitFromSystem(wxString login) {
-	std::ofstream fin_aud("audit.eaud", std::ios_base::app);
-	//std::ofstream fin_aud("audit.txt", std::ios_base::app);
+	std::ofstream fin_aud(audfile_1, std::ios_base::app);
+	//std::ofstream fin_aud("audit.eaud", std::ios_base::app);
 	time_t now = time(0);
 	char* dt = ctime(&now);
 
@@ -244,26 +263,45 @@ void AdminFrame::OnAddNew(wxCommandEvent& event) {
 			wxMessageBox(wxT("Пользователь с таким именем уже существует в системе!"));
 		}
 		else {	// Если такого пользователя еще нет, то добавляем данные по новому пользователю в вектор и ListBox
-			User u(addnew_dlg->new_username->GetValue(), wxT(""), addnew_dlg->block->GetValue(), addnew_dlg->limit->GetValue(), users[0].min_pswtime, users[0].max_pswtime, {}, users[0].num_of_pswds, 0);
-			users.push_back(u);
+			// Если файл аудита переполнен(кол-во строк >= 3*n + 1, n - макс кол-во записей, которое задает админ), 
+			// Админ принудительно очищает файл аудита
+			int number_of_lines = 0;
+			std::string line;
+			std::ifstream myfile(audfile_2);
+			while (std::getline(myfile, line)) {
+				++number_of_lines;
+			}
+			if (number_of_lines >= 3 * users[0].num_of_audit_records + 1) {
+				wxMessageBox(wxT("Файл аудита изменений переполнен.\nОчистите его перед продолжением работы.\nПеред очисткой можно сохранить файл аудита."), wxT("Файл аудита переполнен"));
+				auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит изменений в файле учетных записей"), audfile_2);
+				auditop_dlg->ShowModal();
 
-			CnangeUserData(wxT("Добавление нового пользователя"), addnew_dlg->new_username->GetValue());
-			if (addnew_dlg->block->GetValue()) {
-				CnangeUserData(wxT("Установка блокировки"), addnew_dlg->new_username->GetValue());
+				//
+				addnew_dlg->Destroy();
+				this->Destroy();
 			}
 			else {
-				CnangeUserData(wxT("Снятие блокировки"), addnew_dlg->new_username->GetValue());
-			}
-			if (addnew_dlg->limit->GetValue()) {
-				CnangeUserData(wxT("Установка ограничений на пароль"), addnew_dlg->new_username->GetValue());
-			}
-			else {
-				CnangeUserData(wxT("Снятие ограничений на пароль"), addnew_dlg->new_username->GetValue());
-			}
+				User u(addnew_dlg->new_username->GetValue(), wxT(""), addnew_dlg->block->GetValue(), addnew_dlg->limit->GetValue(), users[0].min_pswtime, users[0].max_pswtime, {}, users[0].num_of_pswds, 0, "", "", 5000);
+				users.push_back(u);
 
-			list->Append(wxString(users[users.size() - 1].name));
+				CnangeUserData(wxT("Добавление нового пользователя"), addnew_dlg->new_username->GetValue());
+				if (addnew_dlg->block->GetValue()) {
+					CnangeUserData(wxT("Установка блокировки"), addnew_dlg->new_username->GetValue());
+				}
+				else {
+					CnangeUserData(wxT("Снятие блокировки"), addnew_dlg->new_username->GetValue());
+				}
+				if (addnew_dlg->limit->GetValue()) {
+					CnangeUserData(wxT("Установка ограничений на пароль"), addnew_dlg->new_username->GetValue());
+				}
+				else {
+					CnangeUserData(wxT("Снятие ограничений на пароль"), addnew_dlg->new_username->GetValue());
+				}
 
-			addnew_dlg->Destroy();
+				list->Append(wxString(users[users.size() - 1].name));
+
+				addnew_dlg->Destroy();
+			}
 		}
 	}
 	else {
@@ -285,37 +323,69 @@ void AdminFrame::OnAddNew(wxCommandEvent& event) {
 //}
 
 void AdminFrame::OnChange_block(wxCommandEvent& event) {
-	bool par = block->GetValue();
-	
-	wxString str_name = list->GetStringSelection();
-	
-	auto it = find_if(users.begin(), users.end(), [str_name](User& u) { return u.name == str_name; });
-	if (it != users.end()) {
-		it->is_block = par;	
+	// Если файл аудита переполнен(кол-во строк >= 3*n + 1, n - макс кол-во записей, которое задает админ), 
+	// Админ принудительно очищает файл аудита
+	int number_of_lines = 0;
+	std::string line;
+	std::ifstream myfile(audfile_2);
+	while (std::getline(myfile, line)) {
+		++number_of_lines;
+	}
+	if (number_of_lines >= 3 * users[0].num_of_audit_records + 1) {
+		wxMessageBox(wxT("Файл аудита изменений переполнен.\nОчистите его перед продолжением работы.\nПеред очисткой можно сохранить файл аудита."), wxT("Файл аудита переполнен"));
+		auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит изменений в файле учетных записей"), audfile_2);
+		auditop_dlg->ShowModal();
+		block->SetValue(1 - block->GetValue());
+	}
+	else {
+		bool par = block->GetValue();
 
-		if (par) {
-			CnangeUserData(wxT("Установка блокировки"), str_name);
-		}
-		else {
-			CnangeUserData(wxT("Снятие блокировки"), str_name);
+		wxString str_name = list->GetStringSelection();
+
+		auto it = find_if(users.begin(), users.end(), [str_name](User& u) { return u.name == str_name; });
+		if (it != users.end()) {
+			it->is_block = par;
+
+			if (par) {
+				CnangeUserData(wxT("Установка блокировки"), str_name);
+			}
+			else {
+				CnangeUserData(wxT("Снятие блокировки"), str_name);
+			}
 		}
 	}
 }
 
 void AdminFrame::OnChange_limit(wxCommandEvent& event) {
-	bool par = limit->GetValue();
+	// Если файл аудита переполнен(кол-во строк >= 3*n + 1, n - макс кол-во записей, которое задает админ), 
+	// Админ принудительно очищает файл аудита
+	int number_of_lines = 0;
+	std::string line;
+	std::ifstream myfile(audfile_2);
+	while (std::getline(myfile, line)) {
+		++number_of_lines;
+	}
+	if (number_of_lines >= 3 * users[0].num_of_audit_records + 1) {
+		wxMessageBox(wxT("Файл аудита изменений переполнен.\nОчистите его перед продолжением работы.\nПеред очисткой можно сохранить файл аудита."), wxT("Файл аудита переполнен"));
+		auditop_dlg = new AuditOperationsDlg(this, wxT("Аудит изменений в файле учетных записей"), audfile_2);
+		auditop_dlg->ShowModal();
+		limit->SetValue(1 - limit->GetValue());
+	}
+	else {
+		bool par = limit->GetValue();
 
-	wxString str_name = list->GetStringSelection();
+		wxString str_name = list->GetStringSelection();
 
-	auto it = find_if(users.begin(), users.end(), [str_name](User& u) { return u.name == str_name; });
-	if (it != users.end()) {
-		it->is_limit = par;
+		auto it = find_if(users.begin(), users.end(), [str_name](User& u) { return u.name == str_name; });
+		if (it != users.end()) {
+			it->is_limit = par;
 
-		if (par) {
-			CnangeUserData(wxT("Установка ограничений на пароль"), str_name);
-		}
-		else {
-			CnangeUserData(wxT("Снятие ограничений на пароль"), str_name);
+			if (par) {
+				CnangeUserData(wxT("Установка ограничений на пароль"), str_name);
+			}
+			else {
+				CnangeUserData(wxT("Снятие ограничений на пароль"), str_name);
+			}
 		}
 	}
 }
@@ -340,9 +410,6 @@ void AdminFrame::OnMinMax(wxCommandEvent& event) {
 		}
 	}
 	setminmax_dlg->Destroy();
-	/*else {
-		setminmax_dlg->Destroy();
-	}*/
 }
 
 // Когда меняем максимальную длину использованных паролей
@@ -360,7 +427,14 @@ void AdminFrame::OnChange_spin(wxCommandEvent& event) {
 		}
 	}
 }
-//
+
+// Когда меняем максимальное количество записей в файлах аудита
+void AdminFrame::OnChange_auditspin(wxCommandEvent& event) {
+	int num = spin_length_audit ->GetValue();
+	if (num > 0) {
+		users[0].num_of_audit_records = spin_length_audit->GetValue();
+	}
+}
 
 void AdminFrame::OnSelect(wxCommandEvent& event) {
 	// Когда выбираем пользователя в списке становяться доступны чекбоксы
@@ -415,6 +489,10 @@ AdminFrame::~AdminFrame() {		// При уничтожении перезапис
 		fout << users[i].max_pswtime << "\n";
 		fout << users[i].num_of_pswds << "\n";
 		fout << users[i].last_changepsw << "\n";
+		fout << users[i].filename_1 << "\n";
+		fout << users[i].filename_2 << "\n";
+		fout << users[i].num_of_audit_records << "\n";
+
 	}
 
 	fout << users[users.size() - 1].name << "\n";
@@ -429,7 +507,10 @@ AdminFrame::~AdminFrame() {		// При уничтожении перезапис
 	fout << users[users.size() - 1].min_pswtime << "\n";
 	fout << users[users.size() - 1].max_pswtime << "\n";
 	fout << users[users.size() - 1].num_of_pswds << "\n";
-	fout << users[users.size() - 1].last_changepsw;
+	fout << users[users.size() - 1].last_changepsw << "\n";
+	fout << users[users.size() - 1].filename_1 << "\n";
+	fout << users[users.size() - 1].filename_2 << "\n";
+	fout << users[users.size() - 1].num_of_audit_records;
 
 	fout.close();
 }
@@ -543,15 +624,6 @@ AuditOperationsDlg::AuditOperationsDlg(wxWindow* parent, wxString f_name, string
 
 	std::ifstream fin(file_name);
 
-	//std::ifstream fin;
-
-	/*if (isEnterAaudit) {
-		fin.open("audit.txt");
-	}
-	else {
-		fin.open("changes_audit.txt");
-	}*/
-
 	if (fin.is_open())
 	{
 		getline(fin, first_str);
@@ -620,6 +692,8 @@ AuditOperationsDlg::AuditOperationsDlg(wxWindow* parent, wxString f_name, string
 	v_box->Add(grid, 1, wxEXPAND | wxBOTTOM, 10);
 	wxButton* btn_ok = new wxButton(pnl, wxID_OK, wxT("Выход"));
 	save_file = new wxButton(pnl, wxID_SAVE, wxT("Сохранить как"));
+	clear_file = new wxButton(pnl, ID_CLEAR, wxT("Очистить файл аудита"));
+	btn_box->Add(clear_file, 0, wxRight | wxLEFT, 5);
 	btn_box->Add(save_file, 0, wxRight | wxLEFT, 5);
 	btn_box->Add(btn_ok, 0, wxRight | wxLEFT, 5);
 	
@@ -629,6 +703,8 @@ AuditOperationsDlg::AuditOperationsDlg(wxWindow* parent, wxString f_name, string
 	pnl->SetSizer(around_box);
 
 	Connect(wxID_SAVE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AuditOperationsDlg::OnSaveFile));
+	Connect(ID_CLEAR, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AuditOperationsDlg::OnClearFile));
+
 
 	Centre();
 }
@@ -648,24 +724,116 @@ bool IsEnterAuditEx(wxString f_name) {
 
 void AuditOperationsDlg::OnSaveFile(wxCommandEvent& event) {
 	if (IsEnterAuditEx(_file_name)) {
-		wxFileDialog saveFileDialog(this, _("Сохранение файла аудита"), "", "", "Audit files (*.eaud)|*.eaud", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
-		if (saveFileDialog.ShowModal() == wxID_CANCEL) {
+		wxFileDialog saveFileDialog(this, _("Сохранение файла аудита входа"), "", "", "Audit files (*.seaud)|*.seaud", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+		if (saveFileDialog.ShowModal() == wxID_OK) {
+			wxString f_path = saveFileDialog.GetPath();
+
+			std::ifstream fin(f_path.ToStdString());
+			if (fin.is_open())								// Если файл уже существовал
+			{
+				fin.close();
+				remove(f_path.ToStdString().c_str());
+				std::ofstream fout(f_path.ToStdString());
+				for (int i = 0; i < grid->GetNumberRows(); ++i) {
+					for (int j = 1; j < grid->GetNumberCols(); ++j) {
+						if (grid->GetCellValue(i, j) != "") {
+							fout << grid->GetCellValue(i, j) << "\n";
+						}
+					}
+				}
+				fout.close();
+			}
+			else {											// Если пользователь ввел имя нового файла
+				fin.close();
+				std::ofstream fout(f_path.ToStdString());
+				for (int i = 0; i < grid->GetNumberRows(); ++i) {
+					for (int j = 1; j < grid->GetNumberCols(); ++j) {
+						if (grid->GetCellValue(i, j) != "") {
+							fout << grid->GetCellValue(i, j) << "\n";
+						}
+					}
+				}
+				fout.close();
+			}
+
 			return;
 		}
 		else {
-
+			return;
 		}
 	}
 	else {
-		wxFileDialog saveFileDialog(this, _("Сохранение файла аудита"), "", "", "Audit files (*.caud)|*.caud", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
-		if (saveFileDialog.ShowModal() == wxID_CANCEL) {
+		wxFileDialog saveFileDialog(this, _("Сохранение файла аудита изменений"), "", "", "Audit files (*.scaud)|*.scaud", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+		if (saveFileDialog.ShowModal() == wxID_OK) {
+			wxString f_path = saveFileDialog.GetPath();
+
+			std::ifstream fin(f_path.ToStdString());
+			if (fin.is_open())								// Если файл уже существовал
+			{
+				fin.close();
+				remove(f_path.ToStdString().c_str());
+				std::ofstream fout(f_path.ToStdString());
+				for (int i = 0; i < grid->GetNumberRows(); ++i) {
+					for (int j = 1; j < grid->GetNumberCols(); ++j) {
+						if (grid->GetCellValue(i, j) != "") {
+							fout << grid->GetCellValue(i, j) << "\n";
+						}
+					}
+				}
+				fout.close();
+			}
+			else {											// Если пользователь ввел имя нового файла
+				fin.close();
+				std::ofstream fout(f_path.ToStdString());
+				for (int i = 0; i < grid->GetNumberRows(); ++i) {
+					for (int j = 1; j < grid->GetNumberCols(); ++j) {
+						if (grid->GetCellValue(i, j) != "") {
+							fout << grid->GetCellValue(i, j) << "\n";
+						}
+					}
+				}
+				fout.close();
+			}
+			
 			return;
 		}
 		else {
-
+			return;
 		}
 	}
 }
+
+void AuditOperationsDlg::OnClearFile(wxCommandEvent& event) {
+	if (IsEnterAuditEx(_file_name)) {
+		//AdminFrame* p_wnd = (AdminFrame*)GetParent();
+		std::ofstream ofs;
+		ofs.open(_file_name.ToStdString(), std::ofstream::out | std::ofstream::trunc);
+		//ofs.open(p_wnd->audfile_1, std::ofstream::out | std::ofstream::trunc);
+		ofs << "Файл аудита:\n";
+		ofs.close();
+		
+		for (int i = 0; i < grid->GetNumberRows(); ++i) {
+			for (int j = 0; j < grid->GetNumberCols(); ++j) {
+				grid->SetCellValue(i, j, wxT(""));
+			}
+		}
+	}
+	else {
+		//AdminFrame* p_wnd = (AdminFrame*)GetParent();
+		std::ofstream ofs;
+		ofs.open(_file_name.ToStdString(), std::ofstream::out | std::ofstream::trunc);
+		//ofs.open(p_wnd->audfile_2, std::ofstream::out | std::ofstream::trunc);
+		ofs << "Файл аудита:\n";
+		ofs.close();
+
+		for (int i = 0; i < grid->GetNumberRows(); ++i) {
+			for (int j = 0; j < grid->GetNumberCols(); ++j) {
+				grid->SetCellValue(i, j, wxT(""));
+			}
+		}
+	}
+}
+
 
 void AuditOperationsDlg::OnSortCol(wxGridEvent& event) {
 	int col_num = event.GetCol();
@@ -830,6 +998,92 @@ AddNewUserDlg::AddNewUserDlg() : wxDialog(NULL, wxID_ANY, wxT("Новый пол
 	Centre();
 }
 
+/////////////////////////////////////////////////////////////////
+
+FirstAdminEnterDlg::FirstAdminEnterDlg(wxWindow* parent) : wxDialog(parent, wxID_ANY, wxT("Первый вход в систему"), wxPoint(-1, -1), wxSize(600, 420)) {
+	wxPanel* pnl = new wxPanel(this, -1);
+
+	wxBoxSizer* v_box = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizer* h_box1 = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer* h_box2 = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer* h_box3 = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer* h_box4 = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer* h_box5 = new wxBoxSizer(wxHORIZONTAL);
+
+	wxStaticText* info = new wxStaticText(pnl, wxID_ANY, wxT("Вы впервые вошли в систему.\nПридумайте себе пароль.\nТакже установите имена для файлов аудита"));
+	v_box->Add(info, 0, wxEXPAND | wxTOP | wxBOTTOM, 15);
+
+	wxStaticText* t_psw1 = new wxStaticText(pnl, wxID_ANY, wxT("Придумайте пароль:"));
+	first_psw = new wxTextCtrl(pnl, wxID_ANY, wxT(""), wxPoint(-1, -1), wxSize(200, -1), wxTE_PASSWORD);
+	h_box1->Add(t_psw1, 1, wxEXPAND | wxRIGHT, 15);
+	h_box1->Add(first_psw, 1, wxEXPAND | wxLEFT, 15);
+	v_box->Add(h_box1, 1, wxEXPAND | wxTOP | wxBOTTOM, 15);
+
+	wxStaticText* t_psw2 = new wxStaticText(pnl, wxID_ANY, wxT("Повторите пароль:"));
+	confirm_psw = new wxTextCtrl(pnl, wxID_ANY, wxT(""), wxPoint(-1, -1), wxSize(200, -1), wxTE_PASSWORD);
+	h_box2->Add(t_psw2, 1, wxEXPAND | wxRIGHT, 15);
+	h_box2->Add(confirm_psw, 1, wxEXPAND | wxLEFT, 15);
+	v_box->Add(h_box2, 1, wxEXPAND | wxTOP | wxBOTTOM, 15);
+
+	wxStaticText* t_1 = new wxStaticText(pnl, wxID_ANY, wxT("Файл аудита входа:"));
+	enter_audit = new wxTextCtrl(pnl, wxID_ANY, wxT(""), wxPoint(-1, -1), wxSize(200, -1));
+	h_box4->Add(t_1, 1, wxEXPAND | wxRIGHT, 15);
+	h_box4->Add(enter_audit, 1, wxEXPAND | wxLEFT, 15);
+	v_box->Add(h_box4, 1, wxEXPAND | wxTOP | wxBOTTOM, 15);
+
+	wxStaticText* t_2 = new wxStaticText(pnl, wxID_ANY, wxT("Файл аудита изменений:"));
+	changes_audit = new wxTextCtrl(pnl, wxID_ANY, wxT(""), wxPoint(-1, -1), wxSize(200, -1));
+	h_box5->Add(t_2, 1, wxEXPAND | wxRIGHT, 15);
+	h_box5->Add(changes_audit, 1, wxEXPAND | wxLEFT, 15);
+	v_box->Add(h_box5, 1, wxEXPAND | wxTOP | wxBOTTOM, 15);
+
+	wxButton* ok_btn = new wxButton(pnl, ID_BTN2, wxT("Ок"));
+	wxButton* cnl_btn = new wxButton(pnl, wxID_CANCEL, wxT("Отмена"));
+	h_box3->Add(ok_btn, 0, wxEXPAND | wxRIGHT, 10);
+	h_box3->Add(cnl_btn, 0, wxEXPAND | wxRIGHT, 10);
+	v_box->Add(h_box3, 0, wxALIGN_RIGHT);
+
+	wxBoxSizer* around_box = new wxBoxSizer(wxVERTICAL);
+	around_box->Add(v_box, 1, wxLEFT | wxALL, 15);
+
+	pnl->SetSizer(around_box);
+
+	Centre();
+
+	Connect(ID_BTN2, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(FirstAdminEnterDlg::OnOkBtn));
+}
+
+void FirstAdminEnterDlg::OnOkBtn(wxCommandEvent& event) {
+	if (this->GetFirstPsw() == wxT("") || this->GetConfirmPsw() == wxT("") || enter_audit->GetValue() == wxT("") || changes_audit->GetValue() == wxT("")) {
+		wxMessageBox(wxT("Все поля должны быть заполнены!"), wxT("Ошибка при вводе"));
+	}
+	else {
+		if (this->GetFirstPsw() != this->GetConfirmPsw()) {
+			wxMessageBox(wxT("Значения полей с паролями не совпадают!"), wxT("Ошибка при вводе пароля"));
+		}
+		else {
+			if (enter_audit->GetValue() == changes_audit->GetValue()) {
+				wxMessageBox(wxT("Имена файлов не могут быть одинаковыми!"), wxT("Ошибка при вводе имен файлов"));
+			}
+			else {
+				MainFrame* p_wnd = (MainFrame*)GetParent();
+				auto it = find_if(p_wnd->start_users.begin(), p_wnd->start_users.end(), [this](User& u) { return u.name == userNameForSearch; });
+				if (wxString_to_lowercase(userNameForSearch) == wxString_to_lowercase(wxString(wxT("ADMIN")))) {
+					it->psw = this->GetFirstPsw();		// Пароль аддмина может быть любым
+					p_wnd->start_users[0].filename_1 = enter_audit->GetValue();
+					p_wnd->start_users[0].filename_2 = changes_audit->GetValue();
+					p_wnd->main_audfile_1 = enter_audit->GetValue();
+					p_wnd->main_audfile_2 = changes_audit->GetValue();
+					wxMessageBox(wxT("Вы успешно установили пароль"));
+					Destroy();
+				}
+			}
+		}
+	}
+}
+
+/////////////////////////////////////////////////////////////////
+
 FirstEnterDlg::FirstEnterDlg(wxWindow* parent) : wxDialog(parent, wxID_ANY, wxT("Первый вход в систему"), wxPoint(-1, -1), wxSize(400, 270)) {
 	wxPanel* pnl = new wxPanel(this, -1);
 
@@ -843,15 +1097,15 @@ FirstEnterDlg::FirstEnterDlg(wxWindow* parent) : wxDialog(parent, wxID_ANY, wxT(
 
 	wxStaticText* t_psw1 = new wxStaticText(pnl, wxID_ANY, wxT("Придумайте пароль:"));
 	first_psw = new wxTextCtrl(pnl, wxID_ANY, wxT(""), wxPoint(-1, -1), wxSize(200, -1), wxTE_PASSWORD);
-	h_box1->Add(t_psw1, 0, wxEXPAND | wxRIGHT, 15);
-	h_box1->Add(first_psw, 0, wxEXPAND | wxLEFT, 15);
-	v_box->Add(h_box1, 0, wxEXPAND | wxTOP | wxBOTTOM, 15);
+	h_box1->Add(t_psw1, 1, wxEXPAND | wxRIGHT, 15);
+	h_box1->Add(first_psw, 1, wxEXPAND | wxLEFT, 15);
+	v_box->Add(h_box1, 1, wxEXPAND | wxTOP | wxBOTTOM, 15);
 
 	wxStaticText* t_psw2 = new wxStaticText(pnl, wxID_ANY, wxT("Повторите пароль:"));
 	confirm_psw = new wxTextCtrl(pnl, wxID_ANY, wxT(""), wxPoint(-1, -1), wxSize(200, -1), wxTE_PASSWORD);
-	h_box2->Add(t_psw2, 0, wxEXPAND | wxRIGHT, 15);
-	h_box2->Add(confirm_psw, 0, wxEXPAND | wxLEFT, 15);
-	v_box->Add(h_box2, 0, wxEXPAND | wxTOP | wxBOTTOM, 15);
+	h_box2->Add(t_psw2, 1, wxEXPAND | wxRIGHT, 15);
+	h_box2->Add(confirm_psw, 1, wxEXPAND | wxLEFT, 15);
+	v_box->Add(h_box2, 1, wxEXPAND | wxTOP | wxBOTTOM, 15);
 
 	wxButton* ok_btn = new wxButton(pnl, ID_BTN, wxT("Ок"));
 	wxButton* cnl_btn = new wxButton(pnl, wxID_CANCEL, wxT("Отмена"));
@@ -880,14 +1134,8 @@ void FirstEnterDlg::OnOkBtn(wxCommandEvent& event) {
 		else {
 			MainFrame* p_wnd = (MainFrame*)GetParent();
 			auto it = find_if(p_wnd->start_users.begin(), p_wnd->start_users.end(), [this](User& u) { return u.name == userNameForSearch; });
-			if (wxString_to_lowercase(userNameForSearch) == wxString_to_lowercase(wxString(wxT("ADMIN")))) {
-			//if (userNameForSearch == wxT("ADMIN")) {
-				it->psw = this->GetFirstPsw();		// Пароль аддмина может быть любым
-				Destroy();
-			}
-			else {
+			if (wxString_to_lowercase(userNameForSearch) != wxString_to_lowercase(wxString(wxT("ADMIN")))) {
 				if (it->is_limit) {		// Проверяем пароль регулярным выражением
-					//wxRegEx re("^(([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*[А-я]+[^.,!?:;1-9]*[1-9]+[^.,!?:;А-я]*)+|([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*[А-я]+[^.,!?:;1-9]*)|([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*))$");
 					wxRegEx re("^(([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*[А-я]+[^.,!?:;1-9]*[1-9]+[^.,!?:;А-я]*)*(([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*[А-я]+[^.,!?:;1-9]*)|([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*))?)$");
 					if (re.IsValid()) {
 						//wxMessageBox(wxT("Compiled!"));
@@ -916,6 +1164,45 @@ void FirstEnterDlg::OnOkBtn(wxCommandEvent& event) {
 		}
 	}
 }
+
+AuditsFilesNames::AuditsFilesNames(wxWindow* parent) : wxDialog(parent, wxID_ANY, wxT("Установка имён для файлов аудита"), wxPoint(-1, -1), wxSize(400, 270)) {
+	wxPanel* pnl = new wxPanel(this, -1);
+
+	wxBoxSizer* v_box = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizer* h_box1 = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer* h_box2 = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer* h_box3 = new wxBoxSizer(wxHORIZONTAL);
+
+	wxStaticText* info = new wxStaticText(pnl, wxID_ANY, wxT("Вы впервые вошли в систему.\nУстановите имена для файлов аудита."));
+	v_box->Add(info, 0, wxEXPAND | wxTOP | wxBOTTOM, 15);
+
+	wxStaticText* t_1 = new wxStaticText(pnl, wxID_ANY, wxT("Файл аудита входа:"));
+	enter_audit = new wxTextCtrl(pnl, wxID_ANY, wxT(""), wxPoint(-1, -1), wxSize(200, -1));
+	h_box1->Add(t_1, 0, wxEXPAND | wxRIGHT, 15);
+	h_box1->Add(enter_audit, 0, wxEXPAND | wxLEFT, 15);
+	v_box->Add(h_box1, 0, wxEXPAND | wxTOP | wxBOTTOM, 15);
+
+	wxStaticText* t_2 = new wxStaticText(pnl, wxID_ANY, wxT("Файл аудита изменений учетных записей:"));
+	changes_audit = new wxTextCtrl(pnl, wxID_ANY, wxT(""), wxPoint(-1, -1), wxSize(200, -1));
+	h_box2->Add(t_2, 0, wxEXPAND | wxRIGHT, 15);
+	h_box2->Add(changes_audit, 0, wxEXPAND | wxLEFT, 15);
+	v_box->Add(h_box2, 0, wxEXPAND | wxTOP | wxBOTTOM, 15);
+
+	wxButton* ok_btn = new wxButton(pnl, wxID_OK, wxT("Ок"));
+	wxButton* cnl_btn = new wxButton(pnl, wxID_CANCEL, wxT("Отмена"));
+	h_box3->Add(ok_btn, 0, wxEXPAND | wxRIGHT, 10);
+	h_box3->Add(cnl_btn, 0, wxEXPAND | wxRIGHT, 10);
+	v_box->Add(h_box3, 0, wxALIGN_RIGHT);
+
+	wxBoxSizer* around_box = new wxBoxSizer(wxVERTICAL);
+	around_box->Add(v_box, 1, wxLEFT | wxALL, 15);
+
+	pnl->SetSizer(around_box);
+
+	Centre();
+
+}
+
 
 SetMinMaxDlg::SetMinMaxDlg() : wxDialog(NULL, wxID_ANY, wxT("Установка времени действия пароля"), wxPoint(-1, -1), wxSize(400, 125)) {
 	wxPanel* pnl = new wxPanel(this, -1);
