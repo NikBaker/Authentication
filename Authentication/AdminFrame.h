@@ -116,6 +116,9 @@ private:
 
 	wxTextCtrl* enter_audit;
 	wxTextCtrl* changes_audit;
+public:
+	string EncriptionPsw(wxString str, char b);
+
 };
 
 // Класс диалога первого входа в систему
@@ -134,6 +137,8 @@ public:
 private:
 	wxTextCtrl* first_psw;
 	wxTextCtrl* confirm_psw;
+public:
+	string EncriptionPsw(wxString str, char b);
 };
 
 // Класс диалога смены пароля
@@ -152,6 +157,9 @@ private:
 	wxTextCtrl* old_psw;
 	wxTextCtrl* new_psw;
 	wxTextCtrl* confirm_psw;
+public:
+	string EncriptionPsw(wxString str, char b);					// Функция шифрования пароля
+	string Decode(wxString str1, wxString str2, char b);		// Функция расшифрования пароля
 };
 
 // Класс диалога установки имен для файлов аудита

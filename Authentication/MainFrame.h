@@ -64,6 +64,9 @@ public:
 	// файлы аудита
 	string main_audfile_1;
 	string main_audfile_2;
+
+public:
+	string Decode(wxString str1, wxString str2, char b);
 };
 
 string wxString_to_lowercase(const wxString& str);

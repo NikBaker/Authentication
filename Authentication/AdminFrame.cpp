@@ -552,6 +552,98 @@ ChangePswDlg::ChangePswDlg(wxWindow* parent) : wxDialog(parent, wxID_ANY, wxT("�
 	Connect(ID_CHAGE_PSW, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(ChangePswDlg::OnOkBtn));
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+string ChangePswDlg::EncriptionPsw(wxString str, char b) {
+	// Второй этап шифрования
+	string s = str.ToStdString();
+	int sum = 0;    // сумма кодов четных символов
+	for (int i = 0; i < s.size(); i += 2) {
+		sum += (int)s[i];
+	}
+	srand(sum); // рандомизация генератора случайных чисел
+
+	// ключ будет состоять из 5 значений
+	string secret_key;
+	for (int i = 0; i < 5; ++i) {
+		secret_key.push_back(rand() % 256);
+	}
+	string res;
+	// Если длина ключа меньше длины пароля, то дополняем оставшиеся позиции повторением ключа
+	if (secret_key.size() < s.size()) {
+		for (int i = 0; i < s.size(); ++i) {
+			res.push_back(s[i] ^ secret_key[i % 5]);
+		}
+	}
+	else {
+		for (int i = 0; i < s.size(); ++i) {
+			res.push_back(s[i] ^ secret_key[i]);
+		}
+	}
+
+	// Второй этап шифрования
+	string second_secret_key;
+	second_secret_key.push_back(123);       // a = 123 - взаимно простое число с 65536 (условие для корректной расшифровки)
+	second_secret_key.push_back(b);       // b = код первого символа в логине 
+
+	string res_2;
+	for (int i = 0; i < res.size(); ++i) {
+		res_2.push_back((res[i] * second_secret_key[0] + second_secret_key[1]) % 65536);	// m = 65536 - длина алфавита
+	}
+
+	return res_2;
+}
+
+
+string ChangePswDlg::Decode(wxString str1, wxString str2, char b) {
+	// Первый этап расшифровки:
+	string s1 = str1.ToStdString();
+	string s2 = str2.ToStdString();
+
+	string decode_1;
+
+	string second_secret_key;
+	second_secret_key.push_back(123);       // a = 123 - взаимно простое число с 65536
+	second_secret_key.push_back(b);       // b = код первого символа в логине 
+
+	// Расшифровываем запись с шифром пароля из файла с пользователями
+	for (int i = 0; i < s2.size(); ++i) {
+		decode_1.push_back((57011 * (s2[i] + 65536 - b)) % 65536);           // 57011 - число обратное к 123 по модулю 65536
+	}
+
+	// Второй этап расшифровки:
+	int sum = 0;
+	// формируем ключ:
+	for (int i = 0; i < str1.size(); i += 2) {
+		sum += (int)str1[i];
+	}
+	srand(sum); // рандомизация генератора случайных чисел
+	string secret_key2;
+	for (int i = 0; i < 5; ++i) {
+		secret_key2.push_back(rand() % 256);
+	}
+
+	string result_psw;
+
+	// расшифровываем decode_1 при помощи полученного ключа:
+	// Если длина ключа меньше длины шифротекста, то дополняем оставшиеся позиции повторением ключа
+	if (secret_key2.size() < decode_1.size()) {
+		for (int i = 0; i < decode_1.size(); ++i) {
+			result_psw.push_back(decode_1[i] ^ secret_key2[i % 5]);
+		}
+	}
+	else {
+		for (int i = 0; i < decode_1.size(); ++i) {
+			result_psw.push_back(decode_1[i] ^ secret_key2[i]);
+		}
+	}
+
+	return result_psw;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 void ChangePswDlg::OnOkBtn(wxCommandEvent& event) {
 	if (this->GetOldPsw() == wxT("") || this->GetNewPsw() == wxT("") || this->GetConfirmPsw() == wxT("")) {
 		wxMessageBox(wxT("Все поля должны быть заполнены"), wxT("Ошибка при вводе пароля"));
@@ -562,7 +654,11 @@ void ChangePswDlg::OnOkBtn(wxCommandEvent& event) {
 		auto it = find_if(p_wnd->users.begin(), p_wnd->users.end(), [p_wnd](User& u) { 
 			return u.name == p_wnd->AdminName; });
 		if (it != p_wnd->users.end()) {
-			if (it->psw != oldStr) {
+			// Расшифровываем:
+			string s = Decode(oldStr, it->psw, wxString_to_lowercase(it->name)[0]);
+			//string s = Decode(oldStr, it->psw, (it->name)[0]);
+			if (oldStr != s) {			// Проверка с шифром
+			//if (it->psw != oldStr) {
 				wxMessageBox(wxT("Неправильно введен старый пароль"), wxT("Ошибка при вводе пароля"));
 			}
 			else {
@@ -571,7 +667,9 @@ void ChangePswDlg::OnOkBtn(wxCommandEvent& event) {
 				}
 				else {
 					wxMessageBox(wxT("Пароль успешно изменен"), wxT("Смена пароля"));
-					it->psw = this->GetNewPsw();
+					it->psw = wxString(EncriptionPsw(this->GetNewPsw(), wxString_to_lowercase(it->name)[0]));		// Сохраняем шифр, а не сам пароль
+					//it->psw = wxString(EncriptionPsw(this->GetNewPsw(), it->name[0]));		// Сохраняем шифр, а не сам пароль
+					//it->psw = this->GetNewPsw();
 					Destroy();
 				}
 			}
@@ -1053,6 +1151,51 @@ FirstAdminEnterDlg::FirstAdminEnterDlg(wxWindow* parent) : wxDialog(parent, wxID
 	Connect(ID_BTN2, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(FirstAdminEnterDlg::OnOkBtn));
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+string FirstAdminEnterDlg::EncriptionPsw(wxString str, char b) {
+	// Первый этап шифрования
+	string s = str.ToStdString();
+	int sum = 0;    // сумма кодов четных символов
+	for (int i = 0; i < s.size(); i += 2) {
+		sum += (int)s[i];
+	}
+	srand(sum); // рандомизация генератора случайных чисел
+
+	// ключ будет состоять из 5 значений
+	string secret_key;
+	for (int i = 0; i < 5; ++i) {
+		secret_key.push_back(rand() % 256);
+	}
+	string res;
+	// Если длина ключа меньше длины пароля, то дополняем оставшиеся позиции повторением ключа
+	if (secret_key.size() < s.size()) {
+		for (int i = 0; i < s.size(); ++i) {
+			res.push_back(s[i] ^ secret_key[i % 5]);
+		}
+	}
+	else {
+		for (int i = 0; i < s.size(); ++i) {
+			res.push_back(s[i] ^ secret_key[i]);
+		}
+	}
+
+	// Второй этап шифрования
+	string second_secret_key;
+	second_secret_key.push_back(123);       // a = 123 - взаимно простое число с 65536 (условие для корректной расшифровки)
+	second_secret_key.push_back(b);       // b = код первого символа в логине 
+
+	string res_2;
+	for (int i = 0; i < res.size(); ++i) {
+		res_2.push_back((res[i] * second_secret_key[0] + second_secret_key[1]) % 65536);	// m = 65536 - длина алфавита
+	}
+
+	return res_2;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 void FirstAdminEnterDlg::OnOkBtn(wxCommandEvent& event) {
 	if (this->GetFirstPsw() == wxT("") || this->GetConfirmPsw() == wxT("") || enter_audit->GetValue() == wxT("") || changes_audit->GetValue() == wxT("")) {
 		wxMessageBox(wxT("Все поля должны быть заполнены!"), wxT("Ошибка при вводе"));
@@ -1069,7 +1212,9 @@ void FirstAdminEnterDlg::OnOkBtn(wxCommandEvent& event) {
 				MainFrame* p_wnd = (MainFrame*)GetParent();
 				auto it = find_if(p_wnd->start_users.begin(), p_wnd->start_users.end(), [this](User& u) { return u.name == userNameForSearch; });
 				if (wxString_to_lowercase(userNameForSearch) == wxString_to_lowercase(wxString(wxT("ADMIN")))) {
-					it->psw = this->GetFirstPsw();		// Пароль аддмина может быть любым
+					it->psw = wxString(EncriptionPsw(this->GetFirstPsw(), wxString_to_lowercase(userNameForSearch)[0]));
+					//it->psw = wxString(EncriptionPsw(this->GetFirstPsw(), userNameForSearch[0]));	// Сохраняем шифр, а не сам пароль
+					//it->psw = this->GetFirstPsw();		// Пароль аддмина может быть любым
 					p_wnd->start_users[0].filename_1 = enter_audit->GetValue();
 					p_wnd->start_users[0].filename_2 = changes_audit->GetValue();
 					p_wnd->main_audfile_1 = enter_audit->GetValue();
@@ -1123,6 +1268,53 @@ FirstEnterDlg::FirstEnterDlg(wxWindow* parent) : wxDialog(parent, wxID_ANY, wxT(
 	Connect(ID_BTN, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(FirstEnterDlg::OnOkBtn));
 }
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+string FirstEnterDlg::EncriptionPsw(wxString str, char b) {
+	// Первый этап шифрования
+	string s = str.ToStdString();
+	int sum = 0;    // сумма кодов четных символов
+	for (int i = 0; i < s.size(); i += 2) {
+		sum += (int)s[i];
+	}
+	srand(sum); // рандомизация генератора случайных чисел
+
+	// ключ будет состоять из 5 значений
+	string secret_key;
+	for (int i = 0; i < 5; ++i) {
+		secret_key.push_back(rand() % 256);
+	}
+	string res;
+	// Если длина ключа меньше длины пароля, то дополняем оставшиеся позиции повторением ключа
+	if (secret_key.size() < s.size()) {
+		for (int i = 0; i < s.size(); ++i) {
+			res.push_back(s[i] ^ secret_key[i % 5]);
+		}
+	}
+	else {
+		for (int i = 0; i < s.size(); ++i) {
+			res.push_back(s[i] ^ secret_key[i]);
+		}
+	}
+
+	// Второй этап шифрования
+	string second_secret_key;
+	second_secret_key.push_back(123);       // a = 123 - взаимно простое число с 65536 (условие для корректной расшифровки)
+	second_secret_key.push_back(b);       // b = код первого символа в логине 
+
+	string res_2;
+	for (int i = 0; i < res.size(); ++i) {
+		res_2.push_back((res[i] * second_secret_key[0] + second_secret_key[1]) % 65536);	// m = 65536 - длина алфавита
+	}
+
+	return res_2;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
 void FirstEnterDlg::OnOkBtn(wxCommandEvent& event) {
 	if (this->GetFirstPsw() == wxT("") || this->GetConfirmPsw() == wxT("")) {
 		wxMessageBox(wxT("Все поля должны быть заполнены"), wxT("Ошибка при вводе пароля"));
@@ -1142,8 +1334,12 @@ void FirstEnterDlg::OnOkBtn(wxCommandEvent& event) {
 					}
 					if (re.Matches(this->GetFirstPsw())) {
 						//wxMessageBox(wxT("Matched"));
-						it->psw = this->GetFirstPsw();
-						it->pswds_list.push_back(this->GetFirstPsw());
+						it->psw = wxString(EncriptionPsw(this->GetFirstPsw(), wxString_to_lowercase(userNameForSearch)[0]));					// Сохраняем шифр, а не сам пароль
+						//it->psw = wxString(EncriptionPsw(this->GetFirstPsw(), userNameForSearch[0]));					// Сохраняем шифр, а не сам пароль
+						//it->psw = this->GetFirstPsw();
+						it->pswds_list.push_back(wxString(EncriptionPsw(this->GetFirstPsw(), wxString_to_lowercase(userNameForSearch)[0])));	// Сохраняем шифр, а не сам пароль
+						//it->pswds_list.push_back(wxString(EncriptionPsw(this->GetFirstPsw(), userNameForSearch[0])));	// Сохраняем шифр, а не сам пароль
+						//it->pswds_list.push_back(this->GetFirstPsw());
 						it->last_changepsw = time(0);
 						wxMessageBox(wxT("Вы успешно установили пароль"));
 						Destroy();
@@ -1154,8 +1350,12 @@ void FirstEnterDlg::OnOkBtn(wxCommandEvent& event) {
 					}
 				}
 				else {
-					it->psw = this->GetFirstPsw();
-					it->pswds_list.push_back(this->GetFirstPsw());
+					it->psw = wxString(EncriptionPsw(this->GetFirstPsw(), wxString_to_lowercase(userNameForSearch)[0]));					// Сохраняем шифр, а не сам пароль
+					//it->psw = wxString(EncriptionPsw(this->GetFirstPsw(), userNameForSearch[0]));					// Сохраняем шифр, а не сам пароль
+					//it->psw = this->GetFirstPsw();			
+					it->pswds_list.push_back(wxString(EncriptionPsw(this->GetFirstPsw(), wxString_to_lowercase(userNameForSearch)[0])));	// Сохраняем шифр, а не сам пароль
+					//it->pswds_list.push_back(wxString(EncriptionPsw(this->GetFirstPsw(), userNameForSearch[0])));	// Сохраняем шифр, а не сам пароль
+					//it->pswds_list.push_back(this->GetFirstPsw());
 					it->last_changepsw = time(0);
 					wxMessageBox(wxT("Вы успешно установили пароль"));
 					Destroy();

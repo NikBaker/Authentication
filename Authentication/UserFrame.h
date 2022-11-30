@@ -72,4 +72,7 @@ public:
 	vector<User> user_vec;
 	bool from_maxtime;
 	wxString changepsw_name;
+public:
+	string EncriptionPsw(wxString str, char b);
+	string Decode(wxString str1, wxString str2, char b);
 };

@@ -110,6 +110,7 @@ const wxString& name) : wxFrame(parent, id, title, pos, size, style, name)
 			// Вектор уже использованных паролей
 			vector<wxString> vec;
 
+			// В векторе будут шифрованные пароли:
 			while (list_pswds.size()) {
 				auto it = find(list_pswds.begin(), list_pswds.end(), '_');
 				if (it != list_pswds.end()) {
@@ -241,6 +242,53 @@ void MainFrame::OnMenuExit(wxMenuEvent& event) {
 void MainFrame::OnMenuAbout(wxMenuEvent& event) {
 	wxMessageBox(wxT("Щучкин Н.Ю. \nГруппа А-13а-19 \nКурсовая работа"), wxT("О программе"));
 }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+string MainFrame::Decode(wxString str1, wxString str2, char b) {
+	// Первый этап расшифровки:
+	string s1 = str1.ToStdString();
+	string s2 = str2.ToStdString();
+
+	string decode_1;
+
+	string second_secret_key;
+	second_secret_key.push_back(123);       // a = 123 - взаимно простое число с 65536
+	second_secret_key.push_back(b);       // b = код первого символа в логине 
+
+	// Расшифровываем запись с шифром пароля из файла с пользователями
+	for (int i = 0; i < s2.size(); ++i) {
+		decode_1.push_back((57011 * (s2[i] + 65536 - b)) % 65536);           // 57011 - число обратное к 123 по модулю 65536
+	}
+
+	// Второй этап расшифровки:
+	int sum = 0;
+	// формируем ключ:
+	for (int i = 0; i < str1.size(); i += 2) {
+		sum += (int)str1[i];
+	}
+	srand(sum); // рандомизация генератора случайных чисел
+	string secret_key2;
+	for (int i = 0; i < 5; ++i) {
+		secret_key2.push_back(rand() % 256);
+	}
+
+	string result_psw;
+
+	// расшифровываем decode_1 при помощи полученного ключа:
+	// Если длина ключа меньше длины шифротекста, то дополняем оставшиеся позиции повторением ключа
+	if (secret_key2.size() < decode_1.size()) {
+		for (int i = 0; i < decode_1.size(); ++i) {
+			result_psw.push_back(decode_1[i] ^ secret_key2[i % 5]);
+		}
+	}
+	else {
+		for (int i = 0; i < decode_1.size(); ++i) {
+			result_psw.push_back(decode_1[i] ^ secret_key2[i]);
+		}
+	}
+
+	return result_psw;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MainFrame::EnterToSystem(bool isSucces, wxString login) {
 	std::ofstream fin_aud(start_users[0].filename_1, std::ios_base::app);
@@ -319,8 +367,12 @@ void MainFrame::OnOkClick(wxCommandEvent& event) {
 
 			}
 			else {		// Не первый вход
-				if (password->GetValue() == it->psw) {
-					
+				// Расшифровываем пароль:
+				string s = Decode(password->GetValue(), it->psw, (s_adminname)[0]);
+				//string s = Decode(password->GetValue(), it->psw, (user_name->GetValue())[0]);
+				
+				if (password->GetValue() == s) {		// Проверка с шифром
+				//if (password->GetValue() == it->psw) {
 					// Если файл аудита переполнен(кол-во строк >= 3*n + 1, n - макс кол-во записей, которое задает админ), 
 					// Админ принудительно очищает файл аудита
 					int number_of_lines = 0;
@@ -430,7 +482,11 @@ void MainFrame::OnOkClick(wxCommandEvent& event) {
 					first_enter->ShowModal();
 				}
 				else {		// Не первый вход
-					if (this->GetUserPsw() == it->psw) {
+					// Расшифровываем пароль:
+					string s = Decode(this->GetUserPsw(), it->psw, s_username[0]);
+					//string s = Decode(this->GetUserPsw(), it->psw, (this->GetUserName())[0]);
+					if (this->GetUserPsw() == s) {		// Проверка с шифром
+					//if (this->GetUserPsw() == it->psw) {
 						if (!it->is_block) {
 							if (it->is_limit) {
 								wxRegEx re("^(([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*[А-я]+[^.,!?:;1-9]*[1-9]+[^.,!?:;А-я]*)*(([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*[А-я]+[^.,!?:;1-9]*)|([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*))?)$");
