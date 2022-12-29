@@ -44,7 +44,7 @@ public:
 	wxString GetUserName() { return user_name->GetValue(); }
 	wxString GetUserPsw() { return password->GetValue(); }
 
-	std::vector<User> start_users;	// Переписать под мапу (быстрее поиск)
+	std::vector<User> start_users;
 
 	void EnterToSystem(bool isSucces, wxString login);	// Функция для аудита входов в систему
 

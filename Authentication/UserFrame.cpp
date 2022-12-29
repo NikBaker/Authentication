@@ -49,7 +49,6 @@ void UserFrame::OnChangePsw(wxMenuEvent& event) {
 
 void UserFrame::ExitFromSystem(wxString login) {
 	std::ofstream fin_aud(user_audfile_1, std::ios_base::app);
-	//std::ofstream fin_aud("audit.eaud", std::ios_base::app);
 	time_t now = time(0);
 	char* dt = ctime(&now);
 
@@ -161,7 +160,7 @@ ChangeUsPswDlg::ChangeUsPswDlg(wxWindow* parent) : wxDialog(parent, wxID_ANY, wx
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 string ChangeUsPswDlg::EncriptionPsw(wxString str, char b) {
-	// Второй этап шифрования
+	// Первый этап шифрования
 	string s = str.ToStdString();
 	int sum = 0;    // сумма кодов четных символов
 	for (int i = 0; i < s.size(); i += 2) {
@@ -257,15 +256,10 @@ void ChangeUsPswDlg::OnOkBtn(wxCommandEvent& event) {
 	}
 	else {
 		wxString oldStr = GetOldPsw();
-		//UserFrame* p_wnd = (UserFrame*)GetParent();
-		//auto it = find_if(p_wnd->user_users.begin(), p_wnd->user_users.end(), [p_wnd](User& u) { return u.name == p_wnd->UserName; });
-		//if (it != p_wnd->user_users.end()) {
 		auto it = find_if(user_vec.begin(), user_vec.end(), [this](User& u) { return u.name == changepsw_name; });
 		if (it != user_vec.end()) {
-			// Расшифровываем:
 			string s = Decode(oldStr, it->psw, wxString_to_lowercase(it->name)[0]);
-			//string s = Decode(oldStr, it->psw, (it->name)[0]);
-			if (oldStr != s) {						// Проверка с шифром
+			if (oldStr != s) {
 			//if (it->psw != oldStr) {
 				wxMessageBox(wxT("Неправильно введен старый пароль"), wxT("Ошибка при вводе пароля"));
 			}
@@ -275,7 +269,8 @@ void ChangeUsPswDlg::OnOkBtn(wxCommandEvent& event) {
 				}
 				else {
 					if (it->is_limit) {		// Проверяем новый пароль регулярным выражением
-						wxRegEx re("^(([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*[А-я]+[^.,!?:;1-9]*[1-9]+[^.,!?:;А-я]*)*(([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*[А-я]+[^.,!?:;1-9]*)|([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*))?)$");
+						//wxRegEx re("^(([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*[А-я]+[^.,!?:;1-9]*[1-9]+[^.,!?:;А-я]*)*(([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*[А-я]+[^.,!?:;1-9]*)|([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*))?)$");
+						wxRegEx re("^(([^.,!?:;A-z1-9]*[.,!?:;]+[^A-z1-9]*[A-z]+[^.,!?:;1-9]*[1-9]+[^.,!?:;A-z]*)*(([^.,!?:;A-z1-9]*[.,!?:;]+[^A-z1-9]*[A-z]+[^.,!?:;1-9]*)|([^.,!?:;A-z1-9]*[.,!?:;]+[^A-z1-9]*))?)$");
 						if (re.IsValid()) {
 							//wxMessageBox(wxT("Compiled!"));
 						}
@@ -283,7 +278,6 @@ void ChangeUsPswDlg::OnOkBtn(wxCommandEvent& event) {
 							//wxMessageBox(wxT("Matched"));
 							
 							if (find(it->pswds_list.begin(), it->pswds_list.end(), EncriptionPsw(this->GetNewPsw(), wxString_to_lowercase(changepsw_name)[0])) != it->pswds_list.end()) {
-							//if (find(it->pswds_list.begin(), it->pswds_list.end(), EncriptionPsw(this->GetNewPsw(), changepsw_name[0])) != it->pswds_list.end()) {
 							//if (find(it->pswds_list.begin(), it->pswds_list.end(), this->GetNewPsw()) != it->pswds_list.end()) {
 								wxMessageBox(wxT("Вы уже использовали такой пароль,\nпопробуйте другой"));
 							}
@@ -292,17 +286,16 @@ void ChangeUsPswDlg::OnOkBtn(wxCommandEvent& event) {
 									if (it->pswds_list.size() == it->num_of_pswds) {		// it->num_of_pswds - максимальное значение, которое устанавливается админом
 										it->pswds_list.erase(it->pswds_list.begin());
 										it->pswds_list.push_back(EncriptionPsw(this->GetNewPsw(), wxString_to_lowercase(changepsw_name)[0]));
-										//it->pswds_list.push_back(EncriptionPsw(this->GetNewPsw(), changepsw_name[0]));
 										//it->pswds_list.push_back(this->GetNewPsw());
 									}
 									else {
 										it->pswds_list.push_back(EncriptionPsw(this->GetNewPsw(), wxString_to_lowercase(changepsw_name)[0]));
-										//it->pswds_list.push_back(EncriptionPsw(this->GetNewPsw(), changepsw_name[0]));
+										
 										//it->pswds_list.push_back(this->GetNewPsw());
 									}
 
 									it->psw = EncriptionPsw(this->GetNewPsw(), wxString_to_lowercase(changepsw_name)[0]);
-									//it->psw = EncriptionPsw(this->GetNewPsw(), changepsw_name[0]);
+									
 									//it->psw = this->GetNewPsw();
 									wxMessageBox(wxT("Вы успешно изменили пароль"));
 									it->last_changepsw = time(0);
@@ -324,17 +317,17 @@ void ChangeUsPswDlg::OnOkBtn(wxCommandEvent& event) {
 										if (it->pswds_list.size() == it->num_of_pswds) {		// it->num_of_pswds - максимальное значение, которое устанавливается админом
 											it->pswds_list.erase(it->pswds_list.begin());
 											it->pswds_list.push_back(EncriptionPsw(this->GetNewPsw(), wxString_to_lowercase(changepsw_name)[0]));
-											//it->pswds_list.push_back(EncriptionPsw(this->GetNewPsw(), changepsw_name[0]));
+											
 											//it->pswds_list.push_back(this->GetNewPsw());
 										}
 										else {
 											it->pswds_list.push_back(EncriptionPsw(this->GetNewPsw(), wxString_to_lowercase(changepsw_name)[0]));
-											//it->pswds_list.push_back(EncriptionPsw(this->GetNewPsw(), changepsw_name[0]));
+											
 											//it->pswds_list.push_back(this->GetNewPsw());
 										}
 
 										it->psw = EncriptionPsw(this->GetNewPsw(), wxString_to_lowercase(changepsw_name)[0]);
-										//it->psw = EncriptionPsw(this->GetNewPsw(), changepsw_name[0]);
+										
 										//it->psw = this->GetNewPsw();
 										wxMessageBox(wxT("Вы успешно изменили пароль"));
 										it->last_changepsw = time(0);
@@ -356,33 +349,32 @@ void ChangeUsPswDlg::OnOkBtn(wxCommandEvent& event) {
 						}
 						else {
 							//wxMessageBox(wxT("Not matched!"));
-							wxMessageBox(wxT("Ваш пароль не соответствует минимальным требованиям!\n(чередование знаков препинания, символов кириллицы, цифр)"));
+							//wxMessageBox(wxT("Ваш пароль не соответствует минимальным требованиям!\n(чередование знаков препинания, символов кириллицы, цифр)"));
+							wxMessageBox(wxT("Ваш пароль не соответствует минимальным требованиям!\n(чередование знаков препинания, символов латиницы, цифр)"));
 						}
 					}
 					else {
 						if (find(it->pswds_list.begin(), it->pswds_list.end(), EncriptionPsw(this->GetNewPsw(), wxString_to_lowercase(changepsw_name)[0])) != it->pswds_list.end()) {
-						//if (find(it->pswds_list.begin(), it->pswds_list.end(), EncriptionPsw(this->GetNewPsw(), changepsw_name[0])) != it->pswds_list.end()) {
+						
 						//if (find(it->pswds_list.begin(), it->pswds_list.end(), this->GetNewPsw()) != it->pswds_list.end()) {
 							wxMessageBox(wxT("Вы уже использовали такой пароль,\nпопробуйте другой"));
-							//wxMessageBox(wxT("Вы уже недавно изменяли пароль,\nпопробуйте позже"));	//
-							//wxMessageBox(wxT("Пришло время сменить пароль,\nВы будете перенаправлены на страницу смены пароля"));	//
 						}
 						else {
 							if (it->min_pswtime == 0) {
 								if (it->pswds_list.size() == it->num_of_pswds) {		// it->num_of_pswds - максимальное значение, которое устанавливается админом
 									it->pswds_list.erase(it->pswds_list.begin());
 									it->pswds_list.push_back(EncriptionPsw(this->GetNewPsw(), wxString_to_lowercase(changepsw_name)[0]));
-									//it->pswds_list.push_back(EncriptionPsw(this->GetNewPsw(), changepsw_name[0]));
+									
 									//it->pswds_list.push_back(this->GetNewPsw());
 								}
 								else {
 									it->pswds_list.push_back(EncriptionPsw(this->GetNewPsw(), wxString_to_lowercase(changepsw_name)[0]));
-									//it->pswds_list.push_back(EncriptionPsw(this->GetNewPsw(), changepsw_name[0]));
+									
 									//it->pswds_list.push_back(this->GetNewPsw());
 								}
 
 								it->psw = EncriptionPsw(this->GetNewPsw(), wxString_to_lowercase(changepsw_name)[0]);
-								//it->psw = EncriptionPsw(this->GetNewPsw(), changepsw_name[0]);
+								
 								//it->psw = this->GetNewPsw();
 								wxMessageBox(wxT("Вы успешно изменили пароль"));
 								it->last_changepsw = time(0);
@@ -405,17 +397,17 @@ void ChangeUsPswDlg::OnOkBtn(wxCommandEvent& event) {
 									if (it->pswds_list.size() == it->num_of_pswds) {		// it->num_of_pswds - максимальное значение, которое устанавливается админом
 										it->pswds_list.erase(it->pswds_list.begin());
 										it->pswds_list.push_back(EncriptionPsw(this->GetNewPsw(), wxString_to_lowercase(changepsw_name)[0]));
-										//it->pswds_list.push_back(EncriptionPsw(this->GetNewPsw(), changepsw_name[0]));
+										
 										//it->pswds_list.push_back(this->GetNewPsw());
 									}
 									else {
 										it->pswds_list.push_back(EncriptionPsw(this->GetNewPsw(), wxString_to_lowercase(changepsw_name)[0]));
-										//it->pswds_list.push_back(EncriptionPsw(this->GetNewPsw(), changepsw_name[0]));
+										
 										//it->pswds_list.push_back(this->GetNewPsw());
 									}
 
 									it->psw = EncriptionPsw(this->GetNewPsw(), wxString_to_lowercase(changepsw_name)[0]);
-									//it->psw = EncriptionPsw(this->GetNewPsw(), changepsw_name[0]);
+									
 									//it->psw = this->GetNewPsw();
 									wxMessageBox(wxT("Вы успешно изменили пароль"));
 									it->last_changepsw = time(0);

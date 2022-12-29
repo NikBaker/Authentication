@@ -57,12 +57,11 @@ public:
 	void OnLogOut(wxMenuEvent& event);
 	void OnAddNew(wxCommandEvent& event);
 	void OnSelect(wxCommandEvent& event);
-	//void OnSave(wxCommandEvent& event);
 	void OnMinMax(wxCommandEvent& event);
 	void OnDClick(wxCommandEvent& event);
 	void OnClose(wxCommandEvent& event);
 
-	void ExitFromSystem(wxString login);	// Функция для аудита выходов из систему
+	void ExitFromSystem(wxString login);	// Функция для аудита выходов из системы
 	void CnangeUserData(wxString operation, wxString username);	// Функция для аудита изменений в файле учетных записей
 
 	void OnChange_block(wxCommandEvent& event);
@@ -89,7 +88,7 @@ private:
 
 	AuditsFilesNames* aud_names_dlg;
 public:
-	std::vector<User> users;		// Переписать под мапу (быстрее поиск)
+	std::vector<User> users;	
 	wxString AdminName;
 
 	// файлы аудита
@@ -198,6 +197,7 @@ public:
 
 	virtual void OnSortCol(wxGridEvent& event);
 	virtual void OnQuery(wxCommandEvent& event);
+	virtual void OnReset(wxCommandEvent& event);
 
 	void OnSaveFile(wxCommandEvent& event);
 	void OnClearFile(wxCommandEvent& event);
@@ -211,6 +211,7 @@ protected:
 	wxTextCtrl* tc_datetime_start;
 	wxTextCtrl* tc_datetime_end;
 	wxButton* btn_query;
+	wxButton* btn_reset;
 
 	wxButton* save_file;
 	wxButton* clear_file;

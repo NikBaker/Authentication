@@ -292,7 +292,6 @@ string MainFrame::Decode(wxString str1, wxString str2, char b) {
 
 void MainFrame::EnterToSystem(bool isSucces, wxString login) {
 	std::ofstream fin_aud(start_users[0].filename_1, std::ios_base::app);
-	//std::ofstream fin_aud("audit.eaud", std::ios_base::app);
 	time_t now = time(0);
 	char* dt = ctime(&now);
 	if (isSucces) {
@@ -323,9 +322,6 @@ string wxString_to_lowercase(const wxString &str) {
 }
 
 void MainFrame::OnOkClick(wxCommandEvent& event) {
-	// Открываем файл аудита входа, если он задан
-
-	
 	// Для сравнения логинов переведем их в нижний регистр
 	string s_username = wxString_to_lowercase(user_name->GetValue());
 	string s_adminname = wxString_to_lowercase(wxString(wxT("ADMIN")));
@@ -339,9 +335,6 @@ void MainFrame::OnOkClick(wxCommandEvent& event) {
 				first_adm_enter = new FirstAdminEnterDlg(this);
 				first_adm_enter->userNameForSearch = it->name;
 				first_adm_enter->ShowModal();
-				//first_enter = new FirstEnterDlg(this);
-				//first_enter->userNameForSearch = it->name;
-				//first_enter->ShowModal();
 
 				// После первого входа админа, мы имеем имена файлов
 				if (start_users[0].filename_1 != "") {
@@ -369,16 +362,14 @@ void MainFrame::OnOkClick(wxCommandEvent& event) {
 			else {		// Не первый вход
 				// Расшифровываем пароль:
 				string s = Decode(password->GetValue(), it->psw, (s_adminname)[0]);
-				//string s = Decode(password->GetValue(), it->psw, (user_name->GetValue())[0]);
-				
-				if (password->GetValue() == s) {		// Проверка с шифром
-				//if (password->GetValue() == it->psw) {
-					// Если файл аудита переполнен(кол-во строк >= 3*n + 1, n - макс кол-во записей, которое задает админ), 
-					// Админ принудительно очищает файл аудита
+				if (password->GetValue() == s) {
+					//if (password->GetValue() == it->psw) {
+						// Если файл аудита переполнен(кол-во строк >= 3*n + 1, n - макс кол-во записей, которое задает админ), 
+						// Админ принудительно очищает файл аудита
 					int number_of_lines = 0;
 					std::string line;
 					std::ifstream myfile(start_users[0].filename_1);
-					while (std::getline(myfile, line)){
+					while (std::getline(myfile, line)) {
 						++number_of_lines;
 					}
 					if (number_of_lines >= 3 * start_users[0].num_of_audit_records + 1) {
@@ -405,7 +396,7 @@ void MainFrame::OnOkClick(wxCommandEvent& event) {
 						Destroy();
 						admin_frame->Show(true);
 					}
-											
+
 				}
 				else {
 					if (!num_mis) {
@@ -484,14 +475,15 @@ void MainFrame::OnOkClick(wxCommandEvent& event) {
 				else {		// Не первый вход
 					// Расшифровываем пароль:
 					string s = Decode(this->GetUserPsw(), it->psw, s_username[0]);
-					//string s = Decode(this->GetUserPsw(), it->psw, (this->GetUserName())[0]);
-					if (this->GetUserPsw() == s) {		// Проверка с шифром
-					//if (this->GetUserPsw() == it->psw) {
+					if (this->GetUserPsw() == s) {
+						//if (this->GetUserPsw() == it->psw) {
 						if (!it->is_block) {
 							if (it->is_limit) {
-								wxRegEx re("^(([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*[А-я]+[^.,!?:;1-9]*[1-9]+[^.,!?:;А-я]*)*(([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*[А-я]+[^.,!?:;1-9]*)|([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*))?)$");
+								//wxRegEx re("^(([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*[А-я]+[^.,!?:;1-9]*[1-9]+[^.,!?:;А-я]*)*(([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*[А-я]+[^.,!?:;1-9]*)|([^.,!?:;А-я1-9]*[.,!?:;]+[^А-я1-9]*))?)$");
+								wxRegEx re("^(([^.,!?:;A-z1-9]*[.,!?:;]+[^A-z1-9]*[A-z]+[^.,!?:;1-9]*[1-9]+[^.,!?:;A-z]*)*(([^.,!?:;A-z1-9]*[.,!?:;]+[^A-z1-9]*[A-z]+[^.,!?:;1-9]*)|([^.,!?:;A-z1-9]*[.,!?:;]+[^A-z1-9]*))?)$");
 								if (!re.Matches(this->GetUserPsw())) {
-									wxMessageBox(wxT("Ваш пароль больше не соответствует минимальным требованиям\n(чередование знаков препинания, символов кириллицы, цифр)\nУстановите новый пароль"));
+									//wxMessageBox(wxT("Ваш пароль больше не соответствует минимальным требованиям\n(чередование знаков препинания, символов кириллицы, цифр)\nУстановите новый пароль"));
+									wxMessageBox(wxT("Ваш пароль больше не соответствует минимальным требованиям\n(чередование знаков препинания, символов латиницы, цифр)\nУстановите новый пароль"));
 									first_enter = new FirstEnterDlg(this);
 									first_enter->userNameForSearch = it->name;
 									first_enter->ShowModal();
@@ -597,11 +589,6 @@ void MainFrame::OnOkClick(wxCommandEvent& event) {
 				}
 			}
 		}
-		
+
 	}
-
-	// Закрываем файл аудита входа
-
-
-
 }
